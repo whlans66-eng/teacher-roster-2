@@ -348,103 +348,170 @@
   </div>
 
   <!-- 驗收單確認 Modal -->
-  <div id="verificationModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50" style="backdrop-filter:blur(8px);">
-    <div class="glass-effect rounded-2xl p-6 w-full max-w-5xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">📋 驗收單與發票/收據 金額確認</h2>
-        <div class="flex gap-2">
-          <button onclick="openAddVerificationModal()" class="modern-btn text-white px-4 py-2 rounded-xl font-medium">+ 新增驗收紀錄</button>
-          <button onclick="toggleVerificationModal()" class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium">關閉</button>
+  <div id="verificationModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50" style="backdrop-filter:blur(12px);">
+    <div class="bg-white rounded-3xl p-0 w-full max-w-6xl mx-4 shadow-2xl max-h-[92vh] overflow-hidden flex flex-col">
+      <!-- 頂部標題列 -->
+      <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 px-8 py-5 flex justify-between items-center flex-shrink-0">
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-wide">驗收單確認系統</h2>
+          <p class="text-white/70 text-sm mt-1">M842 · 網路費用 — 金額與月份自動比對</p>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="openAddVerificationModal()" class="bg-white/20 hover:bg-white/30 backdrop-blur text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-lg">+ 新增紀錄</button>
+          <button onclick="toggleVerificationModal()" class="bg-white/10 hover:bg-white/20 text-white/80 hover:text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all">關閉</button>
         </div>
       </div>
 
-      <!-- 統計摘要 -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 text-white">
-          <p class="text-sm opacity-80">總驗收筆數</p>
-          <p id="verifyTotalCount" class="text-2xl font-bold">0</p>
+      <div class="overflow-y-auto flex-1 p-8">
+        <!-- 統計儀表板 -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div class="relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl p-5 text-white shadow-lg">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -translate-y-6 translate-x-6"></div>
+            <p class="text-xs text-slate-300 font-medium uppercase tracking-wider">總筆數</p>
+            <p id="verifyTotalCount" class="text-3xl font-black mt-1">0</p>
+          </div>
+          <div class="relative overflow-hidden bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-5 text-white shadow-lg">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6"></div>
+            <p class="text-xs text-emerald-100 font-medium uppercase tracking-wider">全部通過</p>
+            <p id="verifyMatchCount" class="text-3xl font-black mt-1">0</p>
+          </div>
+          <div class="relative overflow-hidden bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-5 text-white shadow-lg">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6"></div>
+            <p class="text-xs text-red-100 font-medium uppercase tracking-wider">金額不符</p>
+            <p id="verifyAmountMismatchCount" class="text-3xl font-black mt-1">0</p>
+          </div>
+          <div class="relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-5 text-white shadow-lg">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6"></div>
+            <p class="text-xs text-amber-100 font-medium uppercase tracking-wider">月份不符</p>
+            <p id="verifyMonthMismatchCount" class="text-3xl font-black mt-1">0</p>
+          </div>
+          <div class="relative overflow-hidden bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
+            <div class="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-6 translate-x-6"></div>
+            <p class="text-xs text-violet-100 font-medium uppercase tracking-wider">待確認</p>
+            <p id="verifyPendingCount" class="text-3xl font-black mt-1">0</p>
+          </div>
         </div>
-        <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white">
-          <p class="text-sm opacity-80">金額相符</p>
-          <p id="verifyMatchCount" class="text-2xl font-bold">0</p>
-        </div>
-        <div class="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-4 text-white">
-          <p class="text-sm opacity-80">金額不符</p>
-          <p id="verifyMismatchCount" class="text-2xl font-bold">0</p>
-        </div>
-        <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl p-4 text-white">
-          <p class="text-sm opacity-80">待確認</p>
-          <p id="verifyPendingCount" class="text-2xl font-bold">0</p>
-        </div>
-      </div>
 
-      <!-- 篩選 -->
-      <div class="flex items-center gap-3 mb-4">
-        <label class="text-sm font-medium text-gray-700">篩選狀態：</label>
-        <select id="verifyFilter" onchange="renderVerificationList()" class="modern-input px-3 py-2 rounded-lg text-sm text-gray-800 focus:outline-none">
-          <option value="all">全部</option>
-          <option value="match">金額相符</option>
-          <option value="mismatch">金額不符</option>
-          <option value="pending">待確認</option>
-        </select>
-        <label class="text-sm font-medium text-gray-700 ml-4">篩選師資：</label>
-        <select id="verifyTeacherFilter" onchange="renderVerificationList()" class="modern-input px-3 py-2 rounded-lg text-sm text-gray-800 focus:outline-none">
-          <option value="all">全部師資</option>
-        </select>
-      </div>
+        <!-- 篩選列 -->
+        <div class="flex items-center gap-4 mb-6 bg-gray-50 rounded-2xl p-4">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">狀態</span>
+            <select id="verifyFilter" onchange="renderVerificationList()" class="bg-white border border-gray-200 text-sm text-gray-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent shadow-sm">
+              <option value="all">全部</option>
+              <option value="pass">全部通過</option>
+              <option value="amount_mismatch">金額不符</option>
+              <option value="month_mismatch">月份不符</option>
+              <option value="pending">待確認</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">師資</span>
+            <select id="verifyTeacherFilter" onchange="renderVerificationList()" class="bg-white border border-gray-200 text-sm text-gray-700 px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent shadow-sm">
+              <option value="all">全部師資</option>
+            </select>
+          </div>
+          <div class="ml-auto flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-xl">
+            <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+            <span class="text-xs font-semibold text-indigo-700">確認代碼：M842</span>
+          </div>
+        </div>
 
-      <!-- 驗收紀錄列表 -->
-      <div id="verificationList" class="space-y-3"></div>
+        <!-- 表頭 -->
+        <div class="hidden md:grid grid-cols-12 gap-3 px-5 py-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+          <div class="col-span-2">驗收單號</div>
+          <div class="col-span-2">師資 / 月份</div>
+          <div class="col-span-2">驗收金額</div>
+          <div class="col-span-2">發票金額</div>
+          <div class="col-span-1">發票月份</div>
+          <div class="col-span-2">驗證結果</div>
+          <div class="col-span-1 text-right">操作</div>
+        </div>
+
+        <!-- 驗收紀錄列表 -->
+        <div id="verificationList" class="space-y-3"></div>
+      </div>
     </div>
   </div>
 
   <!-- 新增/編輯驗收紀錄 Modal -->
-  <div id="addVerificationModal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-[100]" style="backdrop-filter:blur(8px);">
-    <div class="glass-effect rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl">
-      <h3 id="verificationFormTitle" class="text-xl font-bold text-gray-800 mb-4">新增驗收紀錄</h3>
-      <form id="verificationForm" class="space-y-4">
+  <div id="addVerificationModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-[100]" style="backdrop-filter:blur(12px);">
+    <div class="bg-white rounded-3xl p-0 w-full max-w-xl mx-4 shadow-2xl overflow-hidden">
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+        <h3 id="verificationFormTitle" class="text-lg font-bold text-white">新增驗收紀錄</h3>
+        <p class="text-white/60 text-xs mt-0.5">確認代碼 M842 · 網路費用</p>
+      </div>
+      <form id="verificationForm" class="p-6 space-y-5">
         <input type="hidden" id="verifyEditId" value="">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">驗收單編號</label>
-          <input type="text" id="verifyAcceptanceNo" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" placeholder="例：ACC-2026-001" required>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">關聯師資</label>
-          <select id="verifyTeacherSelect" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none"></select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">驗收項目說明</label>
-          <input type="text" id="verifyDescription" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" placeholder="例：112學年第2學期授課鐘點費" required>
-        </div>
+
+        <!-- 第一排：驗收單號 + 確認代碼 -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">驗收單金額 (NT$)</label>
-            <input type="number" id="verifyAcceptanceAmount" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" placeholder="0" min="0" step="1" required>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">驗收單編號</label>
+            <input type="text" id="verifyAcceptanceNo" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all" placeholder="ACC-2026-001" required>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">發票/收據金額 (NT$)</label>
-            <input type="number" id="verifyInvoiceAmount" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" placeholder="0" min="0" step="1" required>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">確認代碼</label>
+            <input type="text" id="verifyCode" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all font-mono tracking-widest text-center text-lg" placeholder="M842" value="M842" readonly>
           </div>
         </div>
+
+        <!-- 第二排：師資 + 驗收月份 -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">發票/收據編號</label>
-            <input type="text" id="verifyInvoiceNo" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" placeholder="例：AB-12345678">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">關聯師資</label>
+            <select id="verifyTeacherSelect" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all"></select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">驗收日期</label>
-            <input type="date" id="verifyDate" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" required>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">驗收月份</label>
+            <input type="month" id="verifyMonth" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all" required>
           </div>
         </div>
+
+        <!-- 項目（固定：網路費用） -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">備註</label>
-          <input type="text" id="verifyNote" class="modern-input w-full px-4 py-3 rounded-xl text-gray-800 focus:outline-none" placeholder="選填">
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">驗收項目</label>
+          <div class="w-full px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-700 font-semibold">網路費用</div>
+          <input type="hidden" id="verifyDescription" value="網路費用">
         </div>
+
+        <!-- 金額比對區 -->
+        <div class="bg-gray-50 rounded-2xl p-5">
+          <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">金額比對</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">驗收單金額 (NT$)</label>
+              <input type="number" id="verifyAcceptanceAmount" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-800 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all" placeholder="0" min="0" step="1" required>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">發票/收據金額 (NT$)</label>
+              <input type="number" id="verifyInvoiceAmount" class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-800 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all" placeholder="0" min="0" step="1" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- 發票資訊 -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">發票/收據編號</label>
+            <input type="text" id="verifyInvoiceNo" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all" placeholder="AB-12345678">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">發票日期</label>
+            <input type="date" id="verifyInvoiceDate" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">備註</label>
+          <input type="text" id="verifyNote" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent focus:bg-white transition-all" placeholder="選填">
+        </div>
+
         <!-- 即時比對結果 -->
-        <div id="verifyLiveResult" class="hidden rounded-xl p-3 text-sm font-medium"></div>
-        <div class="flex justify-end gap-3 pt-2">
-          <button type="button" onclick="closeAddVerificationModal()" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium">取消</button>
-          <button type="submit" class="modern-btn px-6 py-3 text-white rounded-xl font-medium">確認儲存</button>
+        <div id="verifyLiveResult" class="hidden rounded-2xl p-4 text-sm font-semibold transition-all"></div>
+
+        <div class="flex justify-end gap-3 pt-1">
+          <button type="button" onclick="closeAddVerificationModal()" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-medium transition-all">取消</button>
+          <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">確認儲存</button>
         </div>
       </form>
     </div>
@@ -1008,39 +1075,58 @@
     function calStopReminderCheck(){ if(calReminderTimer){ clearInterval(calReminderTimer); calReminderTimer=null; } }
 
     /* ===============================
-       驗收單與發票金額確認
+       驗收單與發票金額確認（M842 網路費用）
     ================================ */
-    const VERIFY_STORAGE_KEY='verificationRecords_v1';
+    const VERIFY_STORAGE_KEY='verificationRecords_v2';
+    const VERIFY_CODE='M842';
+    const VERIFY_ITEM='網路費用';
     function loadVerificationRecords(){ try{ return JSON.parse(localStorage.getItem(VERIFY_STORAGE_KEY))||[] }catch(e){ return [] } }
     function saveVerificationRecords(records){ localStorage.setItem(VERIFY_STORAGE_KEY,JSON.stringify(records)); }
 
     let verificationRecords=loadVerificationRecords();
 
-    // 初始化 Demo 資料（僅第一次）
+    // Demo 資料（僅在無資料時初始化）
     function initVerificationDemoData(){
       if(verificationRecords.length>0) return;
-      const today=new Date().toISOString().split('T')[0];
-      const yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
-      const twoDaysAgo=new Date(Date.now()-2*86400000).toISOString().split('T')[0];
       verificationRecords=[
-        { id:'demo1', acceptanceNo:'ACC-2026-001', teacherId:'teacher1', description:'112學年第2學期授課鐘點費', acceptanceAmount:48000, invoiceAmount:48000, invoiceNo:'AB-12345678', date:twoDaysAgo, note:'', status:'match' },
-        { id:'demo2', acceptanceNo:'ACC-2026-002', teacherId:'teacher2', description:'112學年第2學期授課鐘點費', acceptanceAmount:36000, invoiceAmount:36000, invoiceNo:'CD-23456789', date:yesterday, note:'', status:'match' },
-        { id:'demo3', acceptanceNo:'ACC-2026-003', teacherId:'teacher3', description:'專題演講費用', acceptanceAmount:12000, invoiceAmount:10000, invoiceNo:'EF-34567890', date:yesterday, note:'發票金額少開2000元', status:'mismatch' },
-        { id:'demo4', acceptanceNo:'ACC-2026-004', teacherId:'teacher4', description:'實驗材料費', acceptanceAmount:8500, invoiceAmount:8500, invoiceNo:'GH-45678901', date:today, note:'', status:'match' },
-        { id:'demo5', acceptanceNo:'ACC-2026-005', teacherId:'teacher1', description:'數學建模工作坊講師費', acceptanceAmount:25000, invoiceAmount:0, invoiceNo:'', date:today, note:'尚未收到發票', status:'pending' }
+        { id:'d1', acceptanceNo:'ACC-2026-001', code:'M842', teacherId:'teacher1', description:'網路費用', acceptanceMonth:'2026-01', acceptanceAmount:4500, invoiceAmount:4500, invoiceNo:'AB-11223344', invoiceDate:'2026-01-15', note:'', status:'pass' },
+        { id:'d2', acceptanceNo:'ACC-2026-002', code:'M842', teacherId:'teacher2', description:'網路費用', acceptanceMonth:'2026-01', acceptanceAmount:3200, invoiceAmount:3200, invoiceNo:'CD-22334455', invoiceDate:'2026-01-20', note:'', status:'pass' },
+        { id:'d3', acceptanceNo:'ACC-2026-003', code:'M842', teacherId:'teacher3', description:'網路費用', acceptanceMonth:'2026-02', acceptanceAmount:5800, invoiceAmount:4800, invoiceNo:'EF-33445566', invoiceDate:'2026-02-05', note:'發票少開1000元', status:'amount_mismatch' },
+        { id:'d4', acceptanceNo:'ACC-2026-004', code:'M842', teacherId:'teacher4', description:'網路費用', acceptanceMonth:'2026-02', acceptanceAmount:6000, invoiceAmount:6000, invoiceNo:'GH-44556677', invoiceDate:'2026-01-28', note:'發票開立月份為1月', status:'month_mismatch' },
+        { id:'d5', acceptanceNo:'ACC-2026-005', code:'M842', teacherId:'teacher1', description:'網路費用', acceptanceMonth:'2026-02', acceptanceAmount:7200, invoiceAmount:0, invoiceNo:'', invoiceDate:'', note:'尚未收到發票', status:'pending' },
+        { id:'d6', acceptanceNo:'ACC-2026-006', code:'M842', teacherId:'teacher2', description:'網路費用', acceptanceMonth:'2026-02', acceptanceAmount:4100, invoiceAmount:4100, invoiceNo:'IJ-55667788', invoiceDate:'2026-02-10', note:'', status:'pass' }
       ];
       saveVerificationRecords(verificationRecords);
     }
 
-    function getVerificationStatus(acceptanceAmount, invoiceAmount){
-      if(invoiceAmount===0 || invoiceAmount===null || invoiceAmount===undefined) return 'pending';
-      return acceptanceAmount===invoiceAmount ? 'match' : 'mismatch';
+    /**
+     * 驗證狀態判定邏輯：
+     * 1. 發票金額為 0 或無發票日期 → pending（待確認）
+     * 2. 驗收單金額 !== 發票金額 → amount_mismatch（金額不符）
+     * 3. 驗收月份 !== 發票日期月份 → month_mismatch（月份不符）
+     * 4. 都通過 → pass（全部通過）
+     */
+    function computeVerifyStatus(r){
+      if(!r.invoiceAmount || r.invoiceAmount===0 || !r.invoiceDate) return 'pending';
+      if(r.acceptanceAmount !== r.invoiceAmount) return 'amount_mismatch';
+      // 月份比對：驗收月份(YYYY-MM) vs 發票日期(YYYY-MM-DD)取月份
+      const invMonth = r.invoiceDate.substring(0,7); // "YYYY-MM"
+      if(r.acceptanceMonth !== invMonth) return 'month_mismatch';
+      return 'pass';
+    }
+
+    function statusLabel(s){
+      switch(s){
+        case 'pass': return {text:'全部通過', badge:'bg-emerald-100 text-emerald-700', icon:'checkCircle', dot:'bg-emerald-500'};
+        case 'amount_mismatch': return {text:'金額不符', badge:'bg-red-100 text-red-700', icon:'xCircle', dot:'bg-red-500'};
+        case 'month_mismatch': return {text:'月份不符', badge:'bg-amber-100 text-amber-700', icon:'alert', dot:'bg-amber-500'};
+        default: return {text:'待確認', badge:'bg-violet-100 text-violet-700', icon:'clock', dot:'bg-violet-500'};
+      }
     }
 
     function toggleVerificationModal(){
       const modal=document.getElementById('verificationModal');
-      const hidden=modal.classList.contains('hidden');
-      if(hidden){
+      if(modal.classList.contains('hidden')){
         initVerificationDemoData();
         populateVerifyTeacherFilter();
         renderVerificationList();
@@ -1055,86 +1141,98 @@
       sel.innerHTML='<option value="all">全部師資</option>';
       Object.keys(teachersData).forEach(id=>{
         const t=teachersData[id];
-        const opt=document.createElement('option');
-        opt.value=id; opt.textContent=`${t.icon} ${t.name}`;
-        sel.appendChild(opt);
+        sel.insertAdjacentHTML('beforeend',`<option value="${id}">${t.icon} ${t.name}</option>`);
       });
     }
-
     function populateVerifyTeacherSelect(){
       const sel=document.getElementById('verifyTeacherSelect');
       sel.innerHTML='';
       Object.keys(teachersData).forEach(id=>{
         const t=teachersData[id];
-        const opt=document.createElement('option');
-        opt.value=id; opt.textContent=`${t.icon} ${t.name} - ${t.specialty}`;
-        sel.appendChild(opt);
+        sel.insertAdjacentHTML('beforeend',`<option value="${id}">${t.icon} ${t.name} - ${t.specialty}</option>`);
       });
       sel.value=currentTeacher;
     }
 
     function renderVerificationList(){
       const filter=document.getElementById('verifyFilter').value;
-      const teacherFilter=document.getElementById('verifyTeacherFilter').value;
+      const tf=document.getElementById('verifyTeacherFilter').value;
       let records=[...verificationRecords];
-
       if(filter!=='all') records=records.filter(r=>r.status===filter);
-      if(teacherFilter!=='all') records=records.filter(r=>r.teacherId===teacherFilter);
+      if(tf!=='all') records=records.filter(r=>r.teacherId===tf);
+      records.sort((a,b)=>(b.acceptanceMonth||'').localeCompare(a.acceptanceMonth||''));
 
-      records.sort((a,b)=>new Date(b.date)-new Date(a.date));
-
-      // 更新統計
+      // 統計
       const all=verificationRecords;
       document.getElementById('verifyTotalCount').textContent=all.length;
-      document.getElementById('verifyMatchCount').textContent=all.filter(r=>r.status==='match').length;
-      document.getElementById('verifyMismatchCount').textContent=all.filter(r=>r.status==='mismatch').length;
+      document.getElementById('verifyMatchCount').textContent=all.filter(r=>r.status==='pass').length;
+      document.getElementById('verifyAmountMismatchCount').textContent=all.filter(r=>r.status==='amount_mismatch').length;
+      document.getElementById('verifyMonthMismatchCount').textContent=all.filter(r=>r.status==='month_mismatch').length;
       document.getElementById('verifyPendingCount').textContent=all.filter(r=>r.status==='pending').length;
 
       const wrap=document.getElementById('verificationList');
       if(!records.length){
-        wrap.innerHTML='<div class="text-center text-gray-500 py-8">目前沒有符合篩選條件的驗收紀錄</div>';
+        wrap.innerHTML=`<div class="text-center py-16"><div class="text-5xl mb-4 opacity-30">📋</div><p class="text-gray-400 font-medium">目前沒有符合條件的驗收紀錄</p></div>`;
         return;
       }
 
       wrap.innerHTML=records.map(r=>{
         const teacher=teachersData[r.teacherId];
-        const teacherName=teacher?`${teacher.icon} ${teacher.name}`:'(已刪除師資)';
-        let statusBadge='', statusBg='';
-        if(r.status==='match'){
-          statusBadge='<span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">✅ 金額相符</span>';
-          statusBg='border-l-4 border-green-500';
-        }else if(r.status==='mismatch'){
-          const diff=r.acceptanceAmount-r.invoiceAmount;
-          statusBadge=`<span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">❌ 金額不符 (差額 NT$${Math.abs(diff).toLocaleString()})</span>`;
-          statusBg='border-l-4 border-red-500';
-        }else{
-          statusBadge='<span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold">⏳ 待確認</span>';
-          statusBg='border-l-4 border-yellow-500';
-        }
+        const tName=teacher?`${teacher.icon} ${teacher.name}`:'(已移除)';
+        const sl=statusLabel(r.status);
+        const invMonth=r.invoiceDate?r.invoiceDate.substring(0,7):'--';
+        const amountMatch=r.invoiceAmount && r.acceptanceAmount===r.invoiceAmount;
+        const monthMatch=r.acceptanceMonth===invMonth;
+        const diff=r.invoiceAmount?Math.abs(r.acceptanceAmount-r.invoiceAmount):0;
 
         return `
-          <div class="glass-effect rounded-xl p-4 card-hover ${statusBg}">
-            <div class="flex items-start justify-between">
-              <div class="flex-grow">
-                <div class="flex items-center gap-2 mb-2 flex-wrap">
-                  <span class="font-bold text-gray-800">${r.acceptanceNo}</span>
-                  ${statusBadge}
-                  <span class="text-xs text-gray-500">${r.date}</span>
-                </div>
-                <p class="text-sm text-gray-600 mb-2">${r.description}</p>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                  <div><span class="text-gray-500">師資：</span><span class="font-medium">${teacherName}</span></div>
-                  <div><span class="text-gray-500">驗收金額：</span><span class="font-bold text-blue-700">NT$${r.acceptanceAmount.toLocaleString()}</span></div>
-                  <div><span class="text-gray-500">發票金額：</span><span class="font-bold ${r.status==='mismatch'?'text-red-600':'text-green-700'}">${r.invoiceAmount?'NT$'+r.invoiceAmount.toLocaleString():'尚未填入'}</span></div>
-                  <div><span class="text-gray-500">發票號碼：</span><span class="font-medium">${r.invoiceNo||'--'}</span></div>
-                </div>
-                ${r.note?`<p class="text-xs text-gray-500 mt-2">📝 ${r.note}</p>`:''}
+          <div class="bg-white border border-gray-100 rounded-2xl px-5 py-4 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
+            <div class="md:grid grid-cols-12 gap-3 items-center">
+              <!-- 驗收單號 -->
+              <div class="col-span-2 mb-2 md:mb-0">
+                <span class="font-bold text-gray-900 text-sm">${r.acceptanceNo}</span>
+                <span class="ml-1.5 px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold rounded">${r.code}</span>
               </div>
-              <div class="flex space-x-1 ml-4 flex-shrink-0">
-                <button onclick="editVerificationRecord('${r.id}')" class="p-2 text-blue-500 hover:bg-blue-50 rounded-lg" title="編輯">
+              <!-- 師資 / 月份 -->
+              <div class="col-span-2 mb-2 md:mb-0">
+                <p class="text-sm font-medium text-gray-800">${tName}</p>
+                <p class="text-xs text-gray-400">${r.acceptanceMonth||'--'}</p>
+              </div>
+              <!-- 驗收金額 -->
+              <div class="col-span-2 mb-2 md:mb-0">
+                <p class="text-sm font-bold text-gray-800">NT$ ${r.acceptanceAmount.toLocaleString()}</p>
+                <p class="text-[10px] text-gray-400">驗收單金額</p>
+              </div>
+              <!-- 發票金額 -->
+              <div class="col-span-2 mb-2 md:mb-0">
+                ${r.invoiceAmount?`
+                  <p class="text-sm font-bold ${amountMatch?'text-emerald-600':'text-red-600'}">NT$ ${r.invoiceAmount.toLocaleString()}</p>
+                  ${!amountMatch?`<p class="text-[10px] text-red-400">差額 NT$${diff.toLocaleString()}</p>`:`<p class="text-[10px] text-gray-400">發票金額</p>`}
+                `:`<p class="text-sm text-gray-300 italic">尚未填入</p>`}
+              </div>
+              <!-- 發票月份 -->
+              <div class="col-span-1 mb-2 md:mb-0">
+                ${r.invoiceDate?`
+                  <span class="inline-flex items-center gap-1 text-xs font-semibold ${monthMatch?'text-emerald-600':'text-amber-600'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${monthMatch?'bg-emerald-500':'bg-amber-500'}"></span>
+                    ${invMonth}
+                  </span>
+                `:`<span class="text-xs text-gray-300">--</span>`}
+              </div>
+              <!-- 驗證結果 -->
+              <div class="col-span-2 mb-2 md:mb-0">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 ${sl.badge} rounded-full text-xs font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full ${sl.dot}"></span>
+                  ${sl.text}
+                </span>
+                ${r.note?`<p class="text-[10px] text-gray-400 mt-1 truncate max-w-[160px]" title="${r.note}">${r.note}</p>`:''}
+              </div>
+              <!-- 操作 -->
+              <div class="col-span-1 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="editVerificationRecord('${r.id}')" class="p-2 text-indigo-500 hover:bg-indigo-50 rounded-xl transition-colors" title="編輯">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 </button>
-                <button onclick="deleteVerificationRecord('${r.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="刪除">
+                <button onclick="deleteVerificationRecord('${r.id}')" class="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-colors" title="刪除">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
               </div>
@@ -1147,7 +1245,12 @@
       document.getElementById('verificationFormTitle').textContent='新增驗收紀錄';
       document.getElementById('verificationForm').reset();
       document.getElementById('verifyEditId').value='';
-      document.getElementById('verifyDate').value=new Date().toISOString().split('T')[0];
+      document.getElementById('verifyCode').value=VERIFY_CODE;
+      document.getElementById('verifyDescription').value=VERIFY_ITEM;
+      // 預設驗收月份為當月
+      const now=new Date();
+      document.getElementById('verifyMonth').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      document.getElementById('verifyInvoiceDate').value=now.toISOString().split('T')[0];
       document.getElementById('verifyLiveResult').classList.add('hidden');
       populateVerifyTeacherSelect();
       document.getElementById('addVerificationModal').classList.remove('hidden');
@@ -1160,28 +1263,30 @@
     }
 
     function editVerificationRecord(id){
-      const r=verificationRecords.find(rec=>rec.id===id);
+      const r=verificationRecords.find(x=>x.id===id);
       if(!r) return;
       document.getElementById('verificationFormTitle').textContent='編輯驗收紀錄';
       populateVerifyTeacherSelect();
       document.getElementById('verifyEditId').value=r.id;
       document.getElementById('verifyAcceptanceNo').value=r.acceptanceNo;
+      document.getElementById('verifyCode').value=r.code||VERIFY_CODE;
       document.getElementById('verifyTeacherSelect').value=r.teacherId;
+      document.getElementById('verifyMonth').value=r.acceptanceMonth||'';
       document.getElementById('verifyDescription').value=r.description;
       document.getElementById('verifyAcceptanceAmount').value=r.acceptanceAmount;
       document.getElementById('verifyInvoiceAmount').value=r.invoiceAmount||'';
       document.getElementById('verifyInvoiceNo').value=r.invoiceNo||'';
-      document.getElementById('verifyDate').value=r.date;
+      document.getElementById('verifyInvoiceDate').value=r.invoiceDate||'';
       document.getElementById('verifyNote').value=r.note||'';
       updateVerifyLiveResult();
       document.getElementById('addVerificationModal').classList.remove('hidden');
     }
 
     function deleteVerificationRecord(id){
-      const r=verificationRecords.find(rec=>rec.id===id);
+      const r=verificationRecords.find(x=>x.id===id);
       if(!r) return;
       if(!confirm(`確定要刪除驗收紀錄「${r.acceptanceNo}」嗎？`)) return;
-      verificationRecords=verificationRecords.filter(rec=>rec.id!==id);
+      verificationRecords=verificationRecords.filter(x=>x.id!==id);
       saveVerificationRecords(verificationRecords);
       renderVerificationList();
       showMessage(`驗收紀錄「${r.acceptanceNo}」已刪除`,'success');
@@ -1191,61 +1296,85 @@
       e.preventDefault();
       const editId=document.getElementById('verifyEditId').value;
       const acceptanceNo=document.getElementById('verifyAcceptanceNo').value.trim();
+      const code=document.getElementById('verifyCode').value.trim();
       const teacherId=document.getElementById('verifyTeacherSelect').value;
-      const description=document.getElementById('verifyDescription').value.trim();
+      const acceptanceMonth=document.getElementById('verifyMonth').value;
+      const description=document.getElementById('verifyDescription').value.trim()||VERIFY_ITEM;
       const acceptanceAmount=Number(document.getElementById('verifyAcceptanceAmount').value);
       const invoiceAmount=Number(document.getElementById('verifyInvoiceAmount').value)||0;
       const invoiceNo=document.getElementById('verifyInvoiceNo').value.trim();
-      const date=document.getElementById('verifyDate').value;
+      const invoiceDate=document.getElementById('verifyInvoiceDate').value;
       const note=document.getElementById('verifyNote').value.trim();
 
-      if(!acceptanceNo||!description||!date){ showMessage('請填寫所有必填欄位！','error'); return; }
-      if(acceptanceAmount<0||invoiceAmount<0){ showMessage('金額不可為負數！','error'); return; }
+      if(!acceptanceNo||!acceptanceMonth){ showMessage('請填寫驗收單編號與驗收月份！','error'); return; }
+      if(acceptanceAmount<=0){ showMessage('驗收單金額需大於 0！','error'); return; }
 
-      const status=getVerificationStatus(acceptanceAmount, invoiceAmount);
-      const record={ id: editId||Date.now().toString(), acceptanceNo, teacherId, description, acceptanceAmount, invoiceAmount, invoiceNo, date, note, status };
+      const record={id:editId||Date.now().toString(), acceptanceNo, code, teacherId, description, acceptanceMonth, acceptanceAmount, invoiceAmount, invoiceNo, invoiceDate, note, status:''};
+      record.status=computeVerifyStatus(record);
 
       if(editId){
-        const idx=verificationRecords.findIndex(r=>r.id===editId);
+        const idx=verificationRecords.findIndex(x=>x.id===editId);
         if(idx>=0) verificationRecords[idx]=record;
       }else{
         verificationRecords.push(record);
       }
-
       saveVerificationRecords(verificationRecords);
       closeAddVerificationModal();
       renderVerificationList();
 
-      if(status==='match'){
-        showMessage(`驗收紀錄已儲存 — ✅ 金額相符 NT$${acceptanceAmount.toLocaleString()}`,'success');
-      }else if(status==='mismatch'){
-        const diff=Math.abs(acceptanceAmount-invoiceAmount);
-        showMessage(`驗收紀錄已儲存 — ❌ 金額不符，差額 NT$${diff.toLocaleString()}`,'error');
+      const sl=statusLabel(record.status);
+      if(record.status==='pass'){
+        showMessage(`${acceptanceNo} — 全部通過！金額 NT$${acceptanceAmount.toLocaleString()} 相符、月份一致`,'success');
+      }else if(record.status==='amount_mismatch'){
+        showMessage(`${acceptanceNo} — 金額不符，差額 NT$${Math.abs(acceptanceAmount-invoiceAmount).toLocaleString()}`,'error');
+      }else if(record.status==='month_mismatch'){
+        showMessage(`${acceptanceNo} — 月份不符！驗收 ${acceptanceMonth} vs 發票 ${invoiceDate.substring(0,7)}`,'error');
       }else{
-        showMessage('驗收紀錄已儲存 — 待確認發票金額','success');
+        showMessage(`${acceptanceNo} — 已儲存，待確認發票資訊`,'success');
       }
     }
 
     function updateVerifyLiveResult(){
       const accVal=Number(document.getElementById('verifyAcceptanceAmount').value)||0;
       const invVal=Number(document.getElementById('verifyInvoiceAmount').value)||0;
+      const accMonth=document.getElementById('verifyMonth').value;
+      const invDate=document.getElementById('verifyInvoiceDate').value;
+      const invMonth=invDate?invDate.substring(0,7):'';
       const el=document.getElementById('verifyLiveResult');
 
-      if(!accVal && !invVal){ el.classList.add('hidden'); return; }
-
+      if(!accVal){ el.classList.add('hidden'); return; }
       el.classList.remove('hidden');
-      if(invVal===0){
-        el.className='rounded-xl p-3 text-sm font-medium bg-yellow-50 text-yellow-700 border border-yellow-200';
-        el.textContent='⏳ 尚未輸入發票金額，儲存後將標記為「待確認」';
-      }else if(accVal===invVal){
-        el.className='rounded-xl p-3 text-sm font-medium bg-green-50 text-green-700 border border-green-200';
-        el.textContent=`✅ 金額相符：驗收單 NT$${accVal.toLocaleString()} ＝ 發票 NT$${invVal.toLocaleString()}`;
+
+      let html='';
+      // 金額檢查
+      if(!invVal){
+        html=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-violet-500"></span><span>尚未輸入發票金額 — 儲存後將標記為「待確認」</span></div>`;
+        el.className='rounded-2xl p-4 text-sm font-semibold bg-violet-50 text-violet-700 border border-violet-200 space-y-1';
       }else{
-        const diff=Math.abs(accVal-invVal);
-        const direction=accVal>invVal?'驗收單金額 > 發票金額':'驗收單金額 < 發票金額';
-        el.className='rounded-xl p-3 text-sm font-medium bg-red-50 text-red-700 border border-red-200';
-        el.textContent=`❌ 金額不符：差額 NT$${diff.toLocaleString()}（${direction}）`;
+        const amtOk=accVal===invVal;
+        const monOk=accMonth && invMonth && accMonth===invMonth;
+        const monNA=!accMonth||!invMonth;
+
+        if(amtOk && (monOk||monNA)){
+          html =`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>金額相符：NT$${accVal.toLocaleString()} = NT$${invVal.toLocaleString()}</span></div>`;
+          if(monOk) html+=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>月份一致：${accMonth}</span></div>`;
+          el.className='rounded-2xl p-4 text-sm font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 space-y-1';
+        }else{
+          if(!amtOk){
+            const diff=Math.abs(accVal-invVal);
+            html+=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-red-500"></span><span>金額不符：差額 NT$${diff.toLocaleString()}（${accVal>invVal?'驗收 > 發票':'驗收 < 發票'}）</span></div>`;
+          }else{
+            html+=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>金額相符</span></div>`;
+          }
+          if(!monNA && !monOk){
+            html+=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>月份不符：驗收 ${accMonth} vs 發票 ${invMonth}</span></div>`;
+          }else if(monOk){
+            html+=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>月份一致</span></div>`;
+          }
+          el.className='rounded-2xl p-4 text-sm font-semibold bg-red-50 text-red-700 border border-red-200 space-y-1';
+        }
       }
+      el.innerHTML=html;
     }
 
     /* ===============================
@@ -1288,8 +1417,10 @@
 
       // 驗收單確認
       document.getElementById('verificationForm').addEventListener('submit', saveVerificationRecord);
-      document.getElementById('verifyAcceptanceAmount').addEventListener('input', updateVerifyLiveResult);
-      document.getElementById('verifyInvoiceAmount').addEventListener('input', updateVerifyLiveResult);
+      ['verifyAcceptanceAmount','verifyInvoiceAmount','verifyMonth','verifyInvoiceDate'].forEach(id=>{
+        document.getElementById(id).addEventListener('input', updateVerifyLiveResult);
+        document.getElementById(id).addEventListener('change', updateVerifyLiveResult);
+      });
       document.getElementById('verificationModal').addEventListener('click',function(e){ if(e.target===this) toggleVerificationModal(); });
       document.getElementById('addVerificationModal').addEventListener('click',function(e){ if(e.target===this) closeAddVerificationModal(); });
 
