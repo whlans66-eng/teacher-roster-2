@@ -49,9 +49,6 @@
             outline: none;
             border: none;
         }
-        .amount-input::-webkit-inner-spin-button,
-        .amount-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .amount-input { -moz-appearance: textfield; }
 
         /* 切換按鈕 */
         .toggle-btn {
@@ -87,6 +84,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            flex-shrink: 0;
         }
         .status-dot.on {
             background: rgba(34, 197, 94, 0.2);
@@ -112,16 +110,75 @@
         }
         .scale-in { animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        /* 掃描動畫 */
-        @keyframes scanning {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-
         /* 自訂滾動條 */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+
+        /* 拖放區 highlight */
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+        .drop-zone.drag-over {
+            border-color: #3b82f6 !important;
+            background: rgba(59, 130, 246, 0.05) !important;
+            transform: scale(1.01);
+        }
+
+        /* 手機橫向滾動統計列 */
+        .stats-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+        .stats-scroll::-webkit-scrollbar { display: none; }
+        .stats-scroll > div {
+            scroll-snap-align: start;
+            flex-shrink: 0;
+        }
+        @media (min-width: 768px) {
+            .stats-scroll { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; }
+            .stats-scroll > div { flex-shrink: unset; }
+        }
+
+        /* 修復建議提示 */
+        .fix-hint {
+            margin-top: 4px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            line-height: 1.4;
+        }
+        .fix-hint.warn { background: rgba(245, 158, 11, 0.1); color: #d97706; }
+        .fix-hint.err  { background: rgba(239, 68, 68, 0.08); color: #dc2626; }
+        .fix-hint.ok   { background: rgba(34, 197, 94, 0.08); color: #16a34a; }
+
+        /* 發票拖放小區 */
+        .invoice-drop {
+            border: 2px dashed #e2e8f0;
+            border-radius: 16px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .invoice-drop:hover, .invoice-drop.drag-over {
+            border-color: #818cf8;
+            background: rgba(129, 140, 248, 0.04);
+        }
+        .invoice-drop.has-file {
+            border-color: #22c55e;
+            border-style: solid;
+            background: rgba(34, 197, 94, 0.04);
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 lg:p-8 text-slate-900">
@@ -130,10 +187,9 @@
     <div id="toastContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-3"></div>
 
     <!-- ===== 頂部導航 ===== -->
-    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 r-32 shadow-sm border border-slate-200">
+    <header class="max-w-7xl mx-auto mb-6 flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 r-32 shadow-sm border border-slate-200">
         <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-blue-600 r-24 flex items-center justify-center text-white shadow-lg">
-                <!-- Database icon -->
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
                 </svg>
@@ -150,16 +206,11 @@
         </div>
         <div class="flex items-center gap-4 flex-1 max-w-xl">
             <div class="relative flex-1 group">
-                <!-- User icon -->
                 <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                 </svg>
-                <input
-                    type="text"
-                    id="employeeName"
-                    placeholder="輸入姓名/編號..."
-                    class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
-                />
+                <input type="text" id="employeeName" placeholder="輸入姓名/編號..."
+                    class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner" />
                 <div id="identityBadge" class="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-black uppercase hidden">
                     已識別身分
                 </div>
@@ -174,14 +225,60 @@
         </div>
     </header>
 
+    <!-- ===== 統計卡片 (手機橫向滾動 / 桌機 4 格) ===== -->
+    <div class="max-w-7xl mx-auto mb-6">
+        <div class="stats-scroll">
+            <div class="bg-white r-24 p-5 shadow-sm border border-slate-200 min-w-[160px]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">本月申報</span>
+                    <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-black text-slate-800" id="statThisMonth">0</div>
+                <div class="text-[9px] font-bold text-slate-300 uppercase mt-1">Records This Month</div>
+            </div>
+            <div class="bg-white r-24 p-5 shadow-sm border border-slate-200 min-w-[160px]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">通過率</span>
+                    <div class="w-8 h-8 bg-green-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-black text-slate-800" id="statPassRate">--</div>
+                <div class="text-[9px] font-bold text-slate-300 uppercase mt-1">Compliance Rate</div>
+            </div>
+            <div class="bg-white r-24 p-5 shadow-sm border border-slate-200 min-w-[160px]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">累計金額</span>
+                    <div class="w-8 h-8 bg-amber-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-black text-slate-800" id="statTotalAmt">$0</div>
+                <div class="text-[9px] font-bold text-slate-300 uppercase mt-1">Total Claimed</div>
+            </div>
+            <div class="bg-white r-24 p-5 shadow-sm border border-slate-200 min-w-[160px]">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">總紀錄</span>
+                    <div class="w-8 h-8 bg-indigo-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                    </div>
+                </div>
+                <div class="text-2xl font-black text-slate-800" id="statTotalCount">0</div>
+                <div class="text-[9px] font-bold text-slate-300 uppercase mt-1">All Records</div>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== 主內容 ===== -->
     <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- ====== 左側：數據操作區 (8 cols) ====== -->
+        <!-- ====== 左側 (8 cols) ====== -->
         <div class="lg:col-span-8 space-y-6">
 
             <!-- 影像辨識區 -->
-            <section class="bg-white r-40 p-8 shadow-sm border border-slate-200">
+            <section id="mainDropZone" class="bg-white r-40 p-8 shadow-sm border border-slate-200 drop-zone">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-lg font-black flex items-center gap-2 text-slate-700 italic">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -198,35 +295,35 @@
                     </label>
                 </div>
 
-                <!-- 上傳區域 -->
                 <div id="uploadArea">
-                    <label class="border-4 border-dashed border-slate-50 r-32 h-48 flex flex-col items-center justify-center cursor-pointer hover:border-blue-200 hover:bg-blue-50/20 transition-all group">
+                    <label class="border-4 border-dashed border-slate-100 r-32 h-48 flex flex-col items-center justify-center cursor-pointer hover:border-blue-200 hover:bg-blue-50/20 transition-all group">
                         <input type="file" class="hidden" accept="image/*" id="fileInput" />
                         <svg class="w-8 h-8 text-slate-200 group-hover:text-blue-400 mb-2 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
-                        <span class="font-black text-slate-300 text-sm tracking-widest uppercase">Take / Upload Photo</span>
+                        <span class="font-black text-slate-300 text-sm tracking-widest uppercase">拖放或點擊上傳圖片</span>
+                        <span class="font-bold text-slate-200 text-[10px] mt-1 tracking-wider">支援拖放發票/帳單，自動識別欄位</span>
                     </label>
                 </div>
 
-                <!-- 預覽區域 (隱藏) -->
                 <div id="previewArea" class="hidden relative h-48 r-32 bg-slate-900 overflow-hidden shadow-2xl">
                     <img id="previewImage" src="" alt="preview" class="w-full h-full object-contain opacity-50" />
                     <div id="scanOverlay" class="absolute inset-0 hidden flex-col items-center justify-center bg-blue-900/40 backdrop-blur-md">
-                        <svg class="w-8 h-8 animate-spin text-white mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                        </svg>
+                        <svg class="w-8 h-8 animate-spin text-white mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
                         <span class="text-white font-black text-xs tracking-widest animate-pulse uppercase italic">Syncing with AI Engine</span>
                     </div>
+                    <!-- OCR 自動填入提示 -->
+                    <div id="ocrResultBadge" class="absolute bottom-4 left-4 hidden bg-green-500/90 backdrop-blur-md text-white px-4 py-2 rounded-2xl text-[10px] font-black tracking-wider uppercase">
+                        <svg class="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        已自動填入欄位
+                    </div>
                     <button onclick="clearPreview()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/40 p-2 rounded-full text-white backdrop-blur-md transition-all">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                        </svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                     </button>
                 </div>
             </section>
 
-            <!-- 雙面板：驗收單 + 發票 -->
+            <!-- 雙面板 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <!-- 驗收單面板 -->
@@ -251,24 +348,33 @@
 
                     <div>
                         <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">國際漫遊金額</label>
-                        <input type="number" id="roamingAmount" value="0" class="field-input" />
+                        <input type="text" id="roamingAmount" value="0" class="field-input" inputmode="numeric" />
                         <p id="roamingWarning" class="text-[10px] text-red-500 font-black mt-1 italic hidden">! 非公務出差不得申報漫遊費用</p>
                     </div>
 
                     <div class="mt-6 p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
                         <label class="text-[10px] font-black text-blue-400 uppercase mb-1 block">申報金額 (TWD)</label>
-                        <input type="number" id="slipAmount" class="amount-input text-blue-700" placeholder="0" />
+                        <input type="text" id="slipAmount" class="amount-input text-blue-700" placeholder="0" inputmode="numeric" />
                         <p id="overLimitWarning" class="text-[10px] text-red-600 font-black mt-2 hidden"></p>
                     </div>
                 </div>
 
                 <!-- 發票面板 -->
                 <div class="bg-white r-40 p-8 shadow-sm border border-slate-200">
-                    <div class="flex items-center gap-2 mb-6 border-b pb-4 text-indigo-600">
+                    <div class="flex items-center gap-2 mb-4 border-b pb-4 text-indigo-600">
                         <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
                         </svg>
                         <h3 class="font-black italic uppercase tracking-tighter">發票憑證 (Invoice)</h3>
+                    </div>
+
+                    <!-- [優化1] 發票拖放快速上傳 -->
+                    <div id="invoiceDropZone" class="invoice-drop mb-4">
+                        <input type="file" class="hidden" accept="image/*" id="invoiceFileInput" />
+                        <div class="flex items-center justify-center gap-2 py-1">
+                            <svg class="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <span class="text-[10px] font-black text-slate-300 uppercase tracking-wider" id="invoiceDropLabel">拖放發票自動填入欄位</span>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-4">
@@ -281,30 +387,31 @@
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">發票號碼</label>
+                        <input type="text" id="invoiceNumber" class="field-input" placeholder="例：AB-12345678" />
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <button id="btnPaid" onclick="togglePaid()" class="toggle-btn inactive">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                            </svg>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                             已繳費
                         </button>
                         <button id="btnStamp" onclick="toggleStamp()" class="toggle-btn inactive">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                            </svg>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                             有起訖章
                         </button>
                     </div>
 
-                    <div class="mt-4 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                    <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                         <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">憑證記載總額</label>
-                        <input type="number" id="invoiceAmount" class="amount-input text-slate-700" placeholder="0" />
+                        <input type="text" id="invoiceAmount" class="amount-input text-slate-700" placeholder="0" inputmode="numeric" />
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ====== 右側：狀態檢查 + 歷史 (4 cols) ====== -->
+        <!-- ====== 右側 (4 cols) ====== -->
         <div class="lg:col-span-4 space-y-6">
 
             <!-- Compliance Check -->
@@ -318,32 +425,22 @@
                     Compliance Check
                 </h2>
 
-                <div class="space-y-6 relative z-10" id="statusChecks">
-                    <!-- 動態生成 -->
-                </div>
+                <div class="space-y-4 relative z-10" id="statusChecks"></div>
 
-                <button
-                    id="submitBtn"
-                    onclick="handleSave()"
-                    disabled
-                    class="w-full mt-12 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
-                >
+                <button id="submitBtn" onclick="handleSave()" disabled
+                    class="w-full mt-10 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none">
                     資訊未齊全
                 </button>
             </section>
 
-            <!-- 個人申請歷史 -->
+            <!-- 個人歷史 -->
             <section class="bg-white r-32 p-6 shadow-sm border border-slate-200">
                 <div class="flex items-center justify-between mb-4 border-b pb-4">
                     <h3 class="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-tighter">
-                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                        </svg>
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         個人申請歷史
                     </h3>
-                    <svg class="w-4 h-4 text-slate-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
-                    </svg>
+                    <svg class="w-4 h-4 text-slate-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                 </div>
                 <div id="historyList" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                     <div class="py-8 text-center text-slate-300 font-bold text-xs uppercase tracking-widest italic">Enter name to track history</div>
@@ -356,21 +453,15 @@
     <div id="successModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl hidden items-center justify-center p-4 z-50">
         <div class="bg-white r-48 p-12 max-w-sm w-full text-center shadow-2xl scale-in">
             <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
-                <svg class="w-14 h-14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
+                <svg class="w-14 h-14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
             <h3 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter uppercase italic">Verified</h3>
             <p class="text-slate-400 font-bold text-[10px] mb-8 tracking-[0.5em] uppercase">Record Saved Successfully</p>
-            <div id="modalSummary" class="bg-slate-50 rounded-3xl p-6 text-left mb-10 space-y-3 font-bold text-xs">
-            </div>
-            <button onclick="closeSuccessModal()" class="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-lg hover:bg-blue-600 transition-all shadow-xl">
-                處理下一筆
-            </button>
+            <div id="modalSummary" class="bg-slate-50 rounded-3xl p-6 text-left mb-10 space-y-3 font-bold text-xs"></div>
+            <button onclick="closeSuccessModal()" class="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-lg hover:bg-blue-600 transition-all shadow-xl">處理下一筆</button>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="max-w-7xl mx-auto mt-12 py-8 text-center text-slate-300 font-black text-[10px] tracking-[0.8em] uppercase opacity-40">
         AI Intelligent Auditor &bull; Persistence
     </footer>
@@ -384,46 +475,94 @@
     let isPaid = false;
     let hasStamp = false;
 
-    // 角色額度上限
     const roleLimits = { manager: 1399, staff: 800, special: 500 };
+    const roleLabels = { manager: '主管', staff: '一般員工', special: '特定專案' };
+    const monthNames = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+
+    const $ = id => document.getElementById(id);
 
     // ============================================================
-    // DOM 快取
+    // [優化3] 金額千分位格式化
     // ============================================================
-    const $ = id => document.getElementById(id);
+    function formatAmount(value) {
+        const num = parseRawAmount(value);
+        if (isNaN(num) || num === 0) return '';
+        return num.toLocaleString('en-US');
+    }
+
+    function parseRawAmount(value) {
+        if (typeof value === 'number') return value;
+        return parseFloat(String(value).replace(/,/g, '')) || 0;
+    }
+
+    function setupAmountInput(el) {
+        el.addEventListener('input', function() {
+            const pos = this.selectionStart;
+            const oldLen = this.value.length;
+            const raw = this.value.replace(/[^0-9.]/g, '');
+
+            if (raw === '' || raw === '.') {
+                this.value = raw;
+                return;
+            }
+
+            // 保持只有一個小數點
+            const parts = raw.split('.');
+            let formatted;
+            if (parts.length > 1) {
+                formatted = parseFloat(parts[0] || '0').toLocaleString('en-US') + '.' + parts[1];
+            } else {
+                formatted = parseFloat(raw).toLocaleString('en-US');
+            }
+
+            this.value = formatted;
+
+            // 恢復游標位置
+            const newLen = this.value.length;
+            const newPos = pos + (newLen - oldLen);
+            this.setSelectionRange(newPos, newPos);
+
+            runValidation();
+        });
+
+        el.addEventListener('blur', function() {
+            const num = parseRawAmount(this.value);
+            if (num > 0) {
+                this.value = num.toLocaleString('en-US');
+            } else {
+                this.value = '';
+            }
+        });
+    }
 
     // ============================================================
     // 初始化
     // ============================================================
     function init() {
-        // 設定預設月份
         const now = new Date();
         $('slipMonth').value = now.toISOString().slice(0, 7);
 
-        // 綁定所有即時驗證事件
-        const liveFields = ['employeeName', 'slipCode', 'slipMonth', 'slipAmount', 'invoiceDate', 'invoiceAmount', 'roamingAmount'];
-        liveFields.forEach(id => {
+        // 綁定即時驗證
+        ['employeeName', 'slipCode', 'slipMonth', 'invoiceDate'].forEach(id => {
             $(id).addEventListener('input', runValidation);
             $(id).addEventListener('change', runValidation);
         });
 
-        $('userRole').addEventListener('change', () => {
-            runValidation();
-        });
+        // 金額欄位：千分位格式化
+        setupAmountInput($('slipAmount'));
+        setupAmountInput($('invoiceAmount'));
+        setupAmountInput($('roamingAmount'));
+
+        $('userRole').addEventListener('change', runValidation);
 
         $('isBusinessTrip').addEventListener('change', () => {
             const icon = $('tripIcon');
-            if ($('isBusinessTrip').checked) {
-                icon.classList.remove('text-slate-300');
-                icon.classList.add('text-blue-500');
-            } else {
-                icon.classList.remove('text-blue-500');
-                icon.classList.add('text-slate-300');
-            }
+            icon.classList.toggle('text-slate-300', !$('isBusinessTrip').checked);
+            icon.classList.toggle('text-blue-500', $('isBusinessTrip').checked);
             runValidation();
         });
 
-        // 姓名改變 -> 載入身分
+        // 姓名 -> 載入身分
         $('employeeName').addEventListener('input', () => {
             const name = $('employeeName').value.trim();
             if (name && profiles[name]) {
@@ -435,95 +574,191 @@
             renderHistory();
         });
 
-        // 發票日期改變 -> 顯示月份
-        $('invoiceDate').addEventListener('change', () => {
-            const val = $('invoiceDate').value;
-            const box = $('invoiceMonthBox');
-            if (val) {
-                const m = val.slice(0, 7);
-                const slipM = $('slipMonth').value;
-                if (slipM && slipM === m) {
-                    box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-green-50 text-green-600 border-green-100';
-                } else {
-                    box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-red-50 text-red-500 border-red-100';
-                }
-                box.textContent = '月份: ' + m;
-            } else {
-                box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-slate-50 text-slate-300 border-slate-100';
-                box.textContent = '月份: --';
-            }
-        });
-
         // 圖片上傳
-        $('fileInput').addEventListener('change', handleFileUpload);
+        $('fileInput').addEventListener('change', e => handleFileUpload(e, 'main'));
 
-        // 初始驗證
+        // [優化1] 主區拖放
+        setupDragDrop($('mainDropZone'), file => processUpload(file, 'main'));
+
+        // [優化1] 發票專屬拖放
+        const invDrop = $('invoiceDropZone');
+        invDrop.addEventListener('click', () => $('invoiceFileInput').click());
+        $('invoiceFileInput').addEventListener('change', e => {
+            if (e.target.files[0]) processUpload(e.target.files[0], 'invoice');
+        });
+        setupDragDrop(invDrop, file => processUpload(file, 'invoice'));
+
         runValidation();
         renderHistory();
+        updateStats();
     }
 
     // ============================================================
-    // 核心驗證邏輯
+    // [優化1] 拖放處理
+    // ============================================================
+    function setupDragDrop(el, onFile) {
+        ['dragenter', 'dragover'].forEach(evt => {
+            el.addEventListener(evt, e => { e.preventDefault(); el.classList.add('drag-over'); });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            el.addEventListener(evt, e => { e.preventDefault(); el.classList.remove('drag-over'); });
+        });
+        el.addEventListener('drop', e => {
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) onFile(file);
+        });
+    }
+
+    function processUpload(file, target) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            // 顯示預覽
+            $('uploadArea').classList.add('hidden');
+            $('previewArea').classList.remove('hidden');
+            $('previewImage').src = reader.result;
+            $('scanOverlay').classList.remove('hidden');
+            $('scanOverlay').classList.add('flex');
+
+            // 模擬 OCR（2 秒後自動填入 demo 資料）
+            setTimeout(() => {
+                $('scanOverlay').classList.add('hidden');
+                $('scanOverlay').classList.remove('flex');
+
+                if (target === 'invoice') {
+                    simulateInvoiceOCR();
+                    $('invoiceDropZone').classList.add('has-file');
+                    $('invoiceDropLabel').textContent = '發票已上傳 — 已自動填入';
+                } else {
+                    simulateSlipOCR();
+                }
+
+                $('ocrResultBadge').classList.remove('hidden');
+                setTimeout(() => $('ocrResultBadge').classList.add('hidden'), 3000);
+
+                showToast('圖片已辨識，欄位已自動填入', 'success');
+                runValidation();
+            }, 2000);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function simulateInvoiceOCR() {
+        // demo：模擬填入發票欄位
+        const today = new Date();
+        const dateStr = today.toISOString().slice(0, 10);
+        $('invoiceDate').value = dateStr;
+        $('invoiceNumber').value = 'AB-' + String(Math.floor(10000000 + Math.random() * 90000000));
+
+        // 如果申報金額已填，同步發票金額
+        const slipVal = parseRawAmount($('slipAmount').value);
+        if (slipVal > 0) {
+            $('invoiceAmount').value = slipVal.toLocaleString('en-US');
+        }
+    }
+
+    function simulateSlipOCR() {
+        $('slipCode').value = 'M842';
+        const today = new Date();
+        $('slipMonth').value = today.toISOString().slice(0, 7);
+    }
+
+    function handleFileUpload(e, target) {
+        const file = e.target.files[0];
+        if (file) processUpload(file, target);
+    }
+
+    function clearPreview() {
+        $('previewArea').classList.add('hidden');
+        $('uploadArea').classList.remove('hidden');
+        $('previewImage').src = '';
+        $('fileInput').value = '';
+        $('invoiceFileInput').value = '';
+        $('ocrResultBadge').classList.add('hidden');
+        $('invoiceDropZone').classList.remove('has-file');
+        $('invoiceDropLabel').textContent = '拖放發票自動填入欄位';
+    }
+
+    // ============================================================
+    // [優化4] 語意化錯誤訊息產生器
+    // ============================================================
+    function getFixHint(key, data) {
+        switch (key) {
+            case 'name':
+                return { type: 'err', text: '請在上方輸入員工姓名或編號' };
+            case 'amount':
+                if (data.slipAmt === 0 && data.invAmt === 0) return { type: 'warn', text: '尚未輸入金額，請填寫申報金額與憑證總額' };
+                if (data.slipAmt === 0) return { type: 'warn', text: '請在驗收單填寫申報金額' };
+                if (data.invAmt === 0) return { type: 'warn', text: '請在發票憑證填寫憑證記載總額' };
+                return {
+                    type: 'err',
+                    text: `申報金額 $${data.slipAmt.toLocaleString()} 與憑證總額 $${data.invAmt.toLocaleString()} 差額 $${Math.abs(data.slipAmt - data.invAmt).toLocaleString()}，請確認後修正`
+                };
+            case 'code':
+                return { type: 'err', text: `目前科目代碼為「${data.code}」，正確代碼應為「M842」（網路費用）` };
+            case 'month':
+                if (!data.slipMonth) return { type: 'warn', text: '請選擇帳單月份' };
+                if (!data.invMonth) return { type: 'warn', text: '請填寫發票憑證日期' };
+                return {
+                    type: 'err',
+                    text: `發票月份為 ${data.invMonth.split('-')[1]} 月，與帳單月份 ${data.slipMonth.split('-')[1]} 月不符，請確認日期是否正確`
+                };
+            case 'limit':
+                return {
+                    type: 'err',
+                    text: `${roleLabels[data.role]}額度上限為 $${data.limit.toLocaleString()}，目前金額超出 $${(data.slipAmt - data.limit).toLocaleString()}，請調整金額或變更身分`
+                };
+            case 'roaming':
+                return { type: 'err', text: '含有國際漫遊費用 $' + data.roaming.toLocaleString() + '，須勾選「公務出差」方可申報' };
+            case 'paid':
+                return { type: 'warn', text: '請確認費用已繳訖，並點擊「已繳費」按鈕' };
+            default:
+                return null;
+        }
+    }
+
+    // ============================================================
+    // 核心驗證
     // ============================================================
     function runValidation() {
         const name = $('employeeName').value.trim();
         const code = $('slipCode').value.trim().toUpperCase();
         const slipMonth = $('slipMonth').value;
-        const slipAmt = parseFloat($('slipAmount').value) || 0;
+        const slipAmt = parseRawAmount($('slipAmount').value);
         const invDate = $('invoiceDate').value;
-        const invAmt = parseFloat($('invoiceAmount').value) || 0;
-        const roaming = parseFloat($('roamingAmount').value) || 0;
+        const invAmt = parseRawAmount($('invoiceAmount').value);
+        const roaming = parseRawAmount($('roamingAmount').value);
         const role = $('userRole').value;
         const limit = roleLimits[role];
         const trip = $('isBusinessTrip').checked;
-
         const invMonth = invDate ? invDate.slice(0, 7) : null;
 
-        // 計算各驗證項
         const isNameOK = !!name;
         const isAmountMatch = slipAmt > 0 && slipAmt === invAmt;
         const isCodeMatch = code === 'M842';
-        const isMonthMatch = slipMonth && invMonth && slipMonth === invMonth;
+        const isMonthMatch = !!(slipMonth && invMonth && slipMonth === invMonth);
         const isUnderLimit = slipAmt <= limit;
         const isRoamingOK = roaming > 0 ? trip : true;
         const isDocReady = isPaid;
 
-        const amountDiff = Math.abs(slipAmt - invAmt);
+        // 代碼欄位 visual
+        $('slipCode').classList.toggle('field-warning', code !== '' && !isCodeMatch);
 
-        // 代碼欄位警告
-        const codeInput = $('slipCode');
-        if (code && !isCodeMatch) {
-            codeInput.classList.add('field-warning');
-        } else {
-            codeInput.classList.remove('field-warning');
-        }
-
-        // 金額超限警告
-        const amtInput = $('slipAmount');
+        // 金額超限 visual
+        $('slipAmount').classList.toggle('text-red-600', slipAmt > limit);
+        $('slipAmount').classList.toggle('text-blue-700', slipAmt <= limit);
         const overWarn = $('overLimitWarning');
         if (slipAmt > limit) {
-            amtInput.classList.add('text-red-600');
-            amtInput.classList.remove('text-blue-700');
-            overWarn.textContent = `▲ 已超過身分額度上限 ($${limit})`;
+            overWarn.textContent = `▲ 已超過 ${roleLabels[role]} 額度上限 ($${limit.toLocaleString()})，超出 $${(slipAmt - limit).toLocaleString()}`;
             overWarn.classList.remove('hidden');
         } else {
-            amtInput.classList.remove('text-red-600');
-            amtInput.classList.add('text-blue-700');
             overWarn.classList.add('hidden');
         }
 
-        // 漫遊警告
-        const roamWarn = $('roamingWarning');
-        const roamInput = $('roamingAmount');
-        if (roaming > 0 && !trip) {
-            roamWarn.classList.remove('hidden');
-            roamInput.classList.add('field-warning');
-        } else {
-            roamWarn.classList.add('hidden');
-            roamInput.classList.remove('field-warning');
-        }
+        // 漫遊 visual
+        $('roamingWarning').classList.toggle('hidden', !(roaming > 0 && !trip));
+        $('roamingAmount').classList.toggle('field-warning', roaming > 0 && !trip);
 
-        // 發票月份顯示
+        // 月份 box
         const box = $('invoiceMonthBox');
         if (invDate) {
             if (isMonthMatch) {
@@ -532,48 +767,70 @@
                 box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-red-50 text-red-500 border-red-100';
             }
             box.textContent = '月份: ' + invMonth;
+        } else {
+            box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-slate-50 text-slate-300 border-slate-100';
+            box.textContent = '月份: --';
         }
 
-        // 渲染右側狀態面板
+        // 共用資料包
+        const hintData = { slipAmt, invAmt, code, slipMonth, invMonth, role, limit, roaming };
+
+        // [優化4] Compliance Check 含語意化訊息
         const checks = [
-            { active: isNameOK, label: '已確認姓名', detail: name || 'MISSING' },
-            { active: isAmountMatch, label: '金額核對', detail: isAmountMatch ? 'MATCH' : `DIFF $${amountDiff}` },
-            { active: isMonthMatch, label: '月份一致', detail: isMonthMatch ? 'OK' : 'ERROR' },
+            { key: 'name', active: isNameOK, label: '已確認姓名', detail: name || 'MISSING' },
+            { key: 'amount', active: isAmountMatch, label: '金額核對', detail: isAmountMatch ? 'MATCH' : (slipAmt > 0 || invAmt > 0 ? `DIFF $${Math.abs(slipAmt - invAmt).toLocaleString()}` : 'EMPTY') },
+            { key: 'code', active: isCodeMatch, label: '科目代碼', detail: isCodeMatch ? 'M842 ✓' : (code || 'EMPTY') },
+            { key: 'month', active: isMonthMatch, label: '月份一致', detail: isMonthMatch ? 'OK' : 'MISMATCH' },
             { type: 'hr' },
-            { active: isUnderLimit, label: '額度合規', detail: `UPTO ${limit}` },
-            { active: isRoamingOK, label: '漫遊許可', detail: roaming > 0 ? (trip ? '出差中' : '非核准') : '不適用' },
-            { active: isDocReady, label: '費用繳訖', detail: isPaid ? '已確認' : '待補' },
+            { key: 'limit', active: isUnderLimit, label: '額度合規', detail: `UPTO $${limit.toLocaleString()}` },
+            { key: 'roaming', active: isRoamingOK, label: '漫遊許可', detail: roaming > 0 ? (trip ? '出差中' : '非核准') : '不適用' },
+            { key: 'paid', active: isDocReady, label: '費用繳訖', detail: isPaid ? '已確認' : '待補' },
         ];
 
-        const container = $('statusChecks');
-        container.innerHTML = checks.map(c => {
-            if (c.type === 'hr') return '<hr class="border-slate-800" />';
+        $('statusChecks').innerHTML = checks.map(c => {
+            if (c.type === 'hr') return '<hr class="border-slate-800 my-1" />';
+
+            const icon = c.active
+                ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+                : '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+
+            // [優化4] 語意化修復建議
+            let hintHTML = '';
+            if (!c.active) {
+                const hint = getFixHint(c.key, hintData);
+                if (hint) {
+                    const hintIcon = hint.type === 'err'
+                        ? '<svg class="w-3 h-3 flex-shrink-0 mt-px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                        : '<svg class="w-3 h-3 flex-shrink-0 mt-px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+                    const bgCls = hint.type === 'err' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400';
+                    hintHTML = `<div class="mt-2 ${bgCls} rounded-lg px-3 py-2 text-[10px] font-bold flex items-start gap-1.5 leading-relaxed">${hintIcon}<span>${hint.text}</span></div>`;
+                }
+            }
+
             return `
-                <div class="flex items-center justify-between group">
-                    <div class="flex items-center gap-3">
-                        <div class="status-dot ${c.active ? 'on' : 'off'}">
-                            ${c.active
-                                ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
-                                : '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-                            }
+                <div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="status-dot ${c.active ? 'on' : 'off'}">${icon}</div>
+                            <span class="font-black text-xs uppercase tracking-tighter ${c.active ? 'text-white' : 'text-slate-600'}">${c.label}</span>
                         </div>
-                        <span class="font-black text-xs uppercase tracking-tighter ${c.active ? 'text-white' : 'text-slate-600'}">${c.label}</span>
+                        <span class="text-[9px] font-black italic tracking-widest ${c.active ? 'text-blue-400 underline underline-offset-4' : 'text-slate-800'}">${c.detail}</span>
                     </div>
-                    <span class="text-[9px] font-black italic tracking-widest transition-all ${c.active ? 'text-blue-400 underline underline-offset-4' : 'text-slate-800'}">${c.detail}</span>
+                    ${hintHTML}
                 </div>
             `;
         }).join('');
 
-        // 提交按鈕狀態
+        // 按鈕
         const canSubmit = isNameOK && isAmountMatch && isCodeMatch && isMonthMatch && isUnderLimit && isRoamingOK && isDocReady;
         const btn = $('submitBtn');
         if (canSubmit) {
             btn.disabled = false;
-            btn.className = 'w-full mt-12 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-blue-600 text-white hover:bg-blue-500 cursor-pointer shadow-blue-500/30';
+            btn.className = 'w-full mt-10 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-blue-600 text-white hover:bg-blue-500 cursor-pointer shadow-blue-500/30';
             btn.textContent = '核對無誤 • 儲存進度';
         } else {
             btn.disabled = true;
-            btn.className = 'w-full mt-12 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none';
+            btn.className = 'w-full mt-10 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none';
             btn.textContent = '資訊未齊全';
         }
     }
@@ -583,15 +840,29 @@
     // ============================================================
     function togglePaid() {
         isPaid = !isPaid;
-        const btn = $('btnPaid');
-        btn.className = isPaid ? 'toggle-btn active' : 'toggle-btn inactive';
+        $('btnPaid').className = isPaid ? 'toggle-btn active' : 'toggle-btn inactive';
         runValidation();
     }
-
     function toggleStamp() {
         hasStamp = !hasStamp;
-        const btn = $('btnStamp');
-        btn.className = hasStamp ? 'toggle-btn active' : 'toggle-btn inactive';
+        $('btnStamp').className = hasStamp ? 'toggle-btn active' : 'toggle-btn inactive';
+    }
+
+    // ============================================================
+    // [優化2] 統計更新
+    // ============================================================
+    function updateStats() {
+        const now = new Date();
+        const thisMonth = now.toISOString().slice(0, 7);
+        const thisMonthRecords = records.filter(r => r.month === thisMonth);
+        const total = records.length;
+        const passCount = records.filter(r => r.isPaid).length;
+        const totalAmt = records.reduce((s, r) => s + (parseFloat(r.slipData.amount) || 0), 0);
+
+        $('statThisMonth').textContent = thisMonthRecords.length;
+        $('statPassRate').textContent = total > 0 ? Math.round((passCount / total) * 100) + '%' : '--';
+        $('statTotalAmt').textContent = '$' + totalAmt.toLocaleString();
+        $('statTotalCount').textContent = total;
     }
 
     // ============================================================
@@ -602,12 +873,11 @@
         const role = $('userRole').value;
         const code = $('slipCode').value.trim();
         const month = $('slipMonth').value;
-        const amount = $('slipAmount').value;
-        const roaming = $('roamingAmount').value;
+        const amount = parseRawAmount($('slipAmount').value);
+        const roaming = parseRawAmount($('roamingAmount').value);
         const invDate = $('invoiceDate').value;
-        const invAmt = $('invoiceAmount').value;
-
-        const recordId = `${name}_${month}_${Date.now()}`;
+        const invAmt = parseRawAmount($('invoiceAmount').value);
+        const invNum = $('invoiceNumber').value.trim();
 
         // 儲存員工檔案
         profiles[name] = { name, role, lastActive: new Date().toISOString() };
@@ -615,11 +885,11 @@
 
         // 儲存紀錄
         const record = {
-            id: recordId,
+            id: `${name}_${month}_${Date.now()}`,
             employeeName: name,
             userRole: role,
-            slipData: { code, month, amount, roamingAmount: roaming },
-            invoiceData: { date: invDate, amount: invAmt },
+            slipData: { code, month, amount: String(amount), roamingAmount: String(roaming) },
+            invoiceData: { date: invDate, amount: String(invAmt), number: invNum },
             isBusinessTrip: $('isBusinessTrip').checked,
             isPaid,
             hasStamp,
@@ -630,21 +900,21 @@
         records.unshift(record);
         localStorage.setItem('expenseRecords', JSON.stringify(records));
 
-        // 顯示成功
-        const summary = $('modalSummary');
-        const roleLabel = { manager: '主管', staff: '一般員工', special: '特定專案' };
-        summary.innerHTML = `
+        // Modal
+        $('modalSummary').innerHTML = `
             <p class="flex justify-between"><span>申請人：</span><span class="text-slate-900 font-black italic underline decoration-blue-500">${name}</span></p>
-            <p class="flex justify-between"><span>身分：</span><span class="text-slate-500">${roleLabel[role]}</span></p>
-            <p class="flex justify-between"><span>金額：</span><span class="text-blue-600 font-black">$ ${parseFloat(amount).toLocaleString()}</span></p>
+            <p class="flex justify-between"><span>身分：</span><span class="text-slate-500">${roleLabels[role]}</span></p>
+            <p class="flex justify-between"><span>金額：</span><span class="text-blue-600 font-black">$ ${amount.toLocaleString()}</span></p>
             <p class="flex justify-between"><span>月份：</span><span class="text-slate-500">${month}</span></p>
-            ${parseFloat(roaming) > 0 ? `<p class="flex justify-between"><span>漫遊：</span><span class="text-amber-500 font-black">$ ${parseFloat(roaming).toLocaleString()}</span></p>` : ''}
+            ${invNum ? `<p class="flex justify-between"><span>發票：</span><span class="text-slate-500">${invNum}</span></p>` : ''}
+            ${roaming > 0 ? `<p class="flex justify-between"><span>漫遊：</span><span class="text-amber-500 font-black">$ ${roaming.toLocaleString()}</span></p>` : ''}
         `;
 
         $('successModal').classList.remove('hidden');
         $('successModal').classList.add('flex');
 
         renderHistory();
+        updateStats();
         showToast('驗證通過！紀錄已儲存', 'success');
     }
 
@@ -653,10 +923,10 @@
         $('successModal').classList.remove('flex');
         clearPreview();
 
-        // 部分重設（保留姓名與角色）
         $('slipAmount').value = '';
         $('invoiceAmount').value = '';
         $('invoiceDate').value = '';
+        $('invoiceNumber').value = '';
         $('roamingAmount').value = '0';
         isPaid = false;
         hasStamp = false;
@@ -668,7 +938,7 @@
     }
 
     // ============================================================
-    // 歷史紀錄
+    // 歷史
     // ============================================================
     function renderHistory() {
         const name = $('employeeName').value.trim();
@@ -679,9 +949,7 @@
             return;
         }
 
-        const history = records
-            .filter(r => r.employeeName === name)
-            .sort((a, b) => b.month.localeCompare(a.month));
+        const history = records.filter(r => r.employeeName === name).sort((a, b) => b.month.localeCompare(a.month));
 
         if (history.length === 0) {
             list.innerHTML = '<div class="py-10 text-center text-slate-300 font-bold italic text-xs uppercase">No history records</div>';
@@ -690,14 +958,15 @@
 
         list.innerHTML = history.map(r => {
             const roam = parseFloat(r.slipData.roamingAmount) || 0;
+            const amt = parseFloat(r.slipData.amount) || 0;
             return `
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors group">
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors">
                     <div>
                         <p class="text-[10px] font-black text-slate-900 italic tracking-tighter">${r.month}</p>
-                        <p class="text-[9px] font-bold text-slate-400">${r.slipData.code}</p>
+                        <p class="text-[9px] font-bold text-slate-400">${r.slipData.code}${r.invoiceData.number ? ' • ' + r.invoiceData.number : ''}</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm font-black text-blue-600">$${parseFloat(r.slipData.amount).toLocaleString()}</p>
+                        <p class="text-sm font-black text-blue-600">$${amt.toLocaleString()}</p>
                         <p class="text-[8px] font-black uppercase ${roam > 0 ? 'text-amber-500' : 'text-slate-300'}">
                             ${roam > 0 ? 'Roaming Incl.' : 'Std Fee'}
                         </p>
@@ -705,39 +974,6 @@
                 </div>
             `;
         }).join('');
-    }
-
-    // ============================================================
-    // 圖片上傳（模擬 OCR）
-    // ============================================================
-    function handleFileUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            $('uploadArea').classList.add('hidden');
-            $('previewArea').classList.remove('hidden');
-            $('previewImage').src = reader.result;
-
-            // 模擬掃描動畫
-            $('scanOverlay').classList.remove('hidden');
-            $('scanOverlay').classList.add('flex');
-
-            setTimeout(() => {
-                $('scanOverlay').classList.add('hidden');
-                $('scanOverlay').classList.remove('flex');
-                showToast('圖片已載入（OCR 需配置 API Key）', 'info');
-            }, 2000);
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function clearPreview() {
-        $('previewArea').classList.add('hidden');
-        $('uploadArea').classList.remove('hidden');
-        $('previewImage').src = '';
-        $('fileInput').value = '';
     }
 
     // ============================================================
@@ -758,10 +994,7 @@
 
         const toast = document.createElement('div');
         toast.className = `toast-anim ${colors[type]} border rounded-2xl px-5 py-3 flex items-center gap-3 shadow-lg font-bold text-sm`;
-        toast.innerHTML = `
-            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${icons[type]}</svg>
-            ${message}
-        `;
+        toast.innerHTML = `<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${icons[type]}</svg>${message}`;
         container.appendChild(toast);
 
         setTimeout(() => {
