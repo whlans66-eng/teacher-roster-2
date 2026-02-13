@@ -286,13 +286,10 @@
                         </svg>
                         影像自動辨識與提取
                     </h2>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <svg class="w-4 h-4 text-slate-300" id="tripIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                        </svg>
-                        <span class="text-xs font-black text-slate-500">公務出差</span>
-                        <input type="checkbox" id="isBusinessTrip" class="w-4 h-4 rounded accent-blue-600" />
-                    </label>
+                    <div class="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                        OCR Auto-Fill
+                    </div>
                 </div>
 
                 <div id="uploadArea">
@@ -346,13 +343,31 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">國際漫遊金額</label>
-                        <input type="text" id="roamingAmount" value="0" class="field-input" inputmode="numeric" />
-                        <p id="roamingWarning" class="text-[10px] text-red-500 font-black mt-1 italic hidden">! 非公務出差不得申報漫遊費用</p>
+                    <!-- 漫遊 & 出差連動 -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-blue-50/50 transition-all group">
+                            <input type="checkbox" id="isRoaming" class="w-4 h-4 rounded accent-blue-600" />
+                            <div>
+                                <span class="text-[10px] font-black text-slate-600 block group-hover:text-blue-600 transition-colors">包含國際漫遊</span>
+                                <span class="text-[8px] font-bold text-slate-300">需配合出差事由</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 cursor-pointer hover:bg-blue-50/50 transition-all group">
+                            <input type="checkbox" id="isBusinessTrip" class="w-4 h-4 rounded accent-blue-600" />
+                            <div>
+                                <span class="text-[10px] font-black text-slate-600 block group-hover:text-blue-600 transition-colors">出差事由</span>
+                                <span class="text-[8px] font-bold text-slate-300">公務出差申請</span>
+                            </div>
+                        </label>
                     </div>
 
-                    <div class="mt-6 p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
+                    <div id="roamingAmountWrap" class="hidden mb-4">
+                        <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">國際漫遊金額</label>
+                        <input type="text" id="roamingAmount" value="0" class="field-input" inputmode="numeric" />
+                        <p id="roamingWarning" class="text-[10px] text-red-500 font-black mt-1 italic hidden">! 漫遊費用需配合出差申請方可核銷</p>
+                    </div>
+
+                    <div class="mt-4 p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
                         <label class="text-[10px] font-black text-blue-400 uppercase mb-1 block">申報金額 (TWD)</label>
                         <input type="text" id="slipAmount" class="amount-input text-blue-700" placeholder="0" inputmode="numeric" />
                         <p id="overLimitWarning" class="text-[10px] text-red-600 font-black mt-2 hidden"></p>
@@ -392,15 +407,24 @@
                         <input type="text" id="invoiceNumber" class="field-input" placeholder="例：AB-12345678" />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <button id="btnPaid" onclick="togglePaid()" class="toggle-btn inactive">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                            已繳費
-                        </button>
-                        <button id="btnStamp" onclick="toggleStamp()" class="toggle-btn inactive">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                            有起訖章
-                        </button>
+                    <!-- 繳費 & 起訖章確認 -->
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all" id="paidLabel"
+                               style="background:#f8fafc;border-color:#e2e8f0;">
+                            <input type="checkbox" id="isPaid" class="w-4 h-4 rounded accent-blue-600" />
+                            <div>
+                                <span class="text-[10px] font-black text-slate-600 block" id="paidText">已確認繳費</span>
+                                <span class="text-[8px] font-bold text-slate-300" id="paidSub">點擊確認</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-all" id="stampLabel"
+                               style="background:#f8fafc;border-color:#e2e8f0;">
+                            <input type="checkbox" id="hasStamp" class="w-4 h-4 rounded accent-blue-600" />
+                            <div>
+                                <span class="text-[10px] font-black text-slate-600 block" id="stampText">已核對起訖章</span>
+                                <span class="text-[8px] font-bold text-slate-300" id="stampSub">點擊確認</span>
+                            </div>
+                        </label>
                     </div>
 
                     <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
@@ -472,8 +496,7 @@
     // ============================================================
     let records = JSON.parse(localStorage.getItem('expenseRecords') || '[]');
     let profiles = JSON.parse(localStorage.getItem('employeeProfiles') || '{}');
-    let isPaid = false;
-    let hasStamp = false;
+    // isPaid / hasStamp 現在由 checkbox 控制，不需額外變數
 
     const roleLimits = { manager: 1399, staff: 800, special: 500 };
     const roleLabels = { manager: '主管', staff: '一般員工', special: '特定專案' };
@@ -542,7 +565,7 @@
         const now = new Date();
         $('slipMonth').value = now.toISOString().slice(0, 7);
 
-        // 綁定即時驗證
+        // 綁定即時驗證 — 文字 / 選擇欄位
         ['employeeName', 'slipCode', 'slipMonth', 'invoiceDate'].forEach(id => {
             $(id).addEventListener('input', runValidation);
             $(id).addEventListener('change', runValidation);
@@ -555,14 +578,27 @@
 
         $('userRole').addEventListener('change', runValidation);
 
-        $('isBusinessTrip').addEventListener('change', () => {
-            const icon = $('tripIcon');
-            icon.classList.toggle('text-slate-300', !$('isBusinessTrip').checked);
-            icon.classList.toggle('text-blue-500', $('isBusinessTrip').checked);
+        // 漫遊 checkbox → 顯示/隱藏漫遊金額欄
+        $('isRoaming').addEventListener('change', () => {
+            $('roamingAmountWrap').classList.toggle('hidden', !$('isRoaming').checked);
+            if (!$('isRoaming').checked) $('roamingAmount').value = '0';
             runValidation();
         });
 
-        // 姓名 -> 載入身分
+        // 出差 checkbox
+        $('isBusinessTrip').addEventListener('change', runValidation);
+
+        // 繳費 & 起訖章 checkbox → 視覺反饋 + 驗證
+        $('isPaid').addEventListener('change', () => {
+            updateCheckboxLabel('isPaid', 'paidLabel', 'paidText', 'paidSub', '已確認繳費', '繳費已確認', '點擊確認');
+            runValidation();
+        });
+        $('hasStamp').addEventListener('change', () => {
+            updateCheckboxLabel('hasStamp', 'stampLabel', 'stampText', 'stampSub', '已核對起訖章', '起訖章已確認', '點擊確認');
+            runValidation();
+        });
+
+        // 姓名 → 載入身分
         $('employeeName').addEventListener('input', () => {
             const name = $('employeeName').value.trim();
             if (name && profiles[name]) {
@@ -576,11 +612,9 @@
 
         // 圖片上傳
         $('fileInput').addEventListener('change', e => handleFileUpload(e, 'main'));
-
-        // [優化1] 主區拖放
         setupDragDrop($('mainDropZone'), file => processUpload(file, 'main'));
 
-        // [優化1] 發票專屬拖放
+        // 發票專屬拖放
         const invDrop = $('invoiceDropZone');
         invDrop.addEventListener('click', () => $('invoiceFileInput').click());
         $('invoiceFileInput').addEventListener('change', e => {
@@ -591,6 +625,20 @@
         runValidation();
         renderHistory();
         updateStats();
+    }
+
+    // checkbox 視覺反饋
+    function updateCheckboxLabel(cbId, labelId, textId, subId, offText, onText, offSub) {
+        const checked = $(cbId).checked;
+        const label = $(labelId);
+        label.style.background = checked ? '#eff6ff' : '#f8fafc';
+        label.style.borderColor = checked ? '#93c5fd' : '#e2e8f0';
+        $(textId).textContent = checked ? onText : offText;
+        $(textId).classList.toggle('text-blue-600', checked);
+        $(textId).classList.toggle('text-slate-600', !checked);
+        $(subId).textContent = checked ? '已確認 ✓' : offSub;
+        $(subId).classList.toggle('text-blue-400', checked);
+        $(subId).classList.toggle('text-slate-300', !checked);
     }
 
     // ============================================================
@@ -679,12 +727,35 @@
     }
 
     // ============================================================
-    // [優化4] 語意化錯誤訊息產生器
+    // 語意化錯誤訊息產生器（整合新規則引擎）
     // ============================================================
     function getFixHint(key, data) {
         switch (key) {
             case 'name':
                 return { type: 'err', text: '請在上方輸入員工姓名或編號' };
+            case 'limit':
+                if (data.slipAmt === 0) return { type: 'warn', text: '尚未輸入申報金額' };
+                return {
+                    type: 'err',
+                    text: `${roleLabels[data.role]}額度上限為 $${data.limit.toLocaleString()}，目前申報 $${data.slipAmt.toLocaleString()} 超出 $${(data.slipAmt - data.limit).toLocaleString()}，請調整金額或變更職級`
+                };
+            case 'roaming':
+                return { type: 'err', text: `已勾選包含國際漫遊，但尚未勾選「出差事由」。漫遊費用需配合出差申請方可核銷` };
+            case 'paid':
+                return { type: 'warn', text: '請在發票憑證區勾選「已確認繳費」' };
+            case 'subject':
+                if (data.expense !== '網路費用' && !data.monthMatch) {
+                    return { type: 'err', text: `費用科目須為「網路費用」(代碼 M842)，且月份須一致。目前科目代碼「${data.code}」${!data.invMonth ? '，發票日期尚未填寫' : `，發票月份 ${data.invMonth.split('-')[1]} 月與帳單月份 ${data.slipMonth.split('-')[1]} 月不符`}` };
+                }
+                if (data.expense !== '網路費用') {
+                    return { type: 'err', text: `會計科目代碼須為「M842」（網路費用），目前輸入「${data.code}」` };
+                }
+                if (!data.slipMonth) return { type: 'warn', text: '請選擇帳單月份' };
+                if (!data.invMonth) return { type: 'warn', text: '請填寫發票憑證日期' };
+                return {
+                    type: 'err',
+                    text: `發票月份為 ${data.invMonth.split('-')[1]} 月，與帳單月份 ${data.slipMonth.split('-')[1]} 月不符，請確認日期是否正確`
+                };
             case 'amount':
                 if (data.slipAmt === 0 && data.invAmt === 0) return { type: 'warn', text: '尚未輸入金額，請填寫申報金額與憑證總額' };
                 if (data.slipAmt === 0) return { type: 'warn', text: '請在驗收單填寫申報金額' };
@@ -693,31 +764,13 @@
                     type: 'err',
                     text: `申報金額 $${data.slipAmt.toLocaleString()} 與憑證總額 $${data.invAmt.toLocaleString()} 差額 $${Math.abs(data.slipAmt - data.invAmt).toLocaleString()}，請確認後修正`
                 };
-            case 'code':
-                return { type: 'err', text: `目前科目代碼為「${data.code}」，正確代碼應為「M842」（網路費用）` };
-            case 'month':
-                if (!data.slipMonth) return { type: 'warn', text: '請選擇帳單月份' };
-                if (!data.invMonth) return { type: 'warn', text: '請填寫發票憑證日期' };
-                return {
-                    type: 'err',
-                    text: `發票月份為 ${data.invMonth.split('-')[1]} 月，與帳單月份 ${data.slipMonth.split('-')[1]} 月不符，請確認日期是否正確`
-                };
-            case 'limit':
-                return {
-                    type: 'err',
-                    text: `${roleLabels[data.role]}額度上限為 $${data.limit.toLocaleString()}，目前金額超出 $${(data.slipAmt - data.limit).toLocaleString()}，請調整金額或變更身分`
-                };
-            case 'roaming':
-                return { type: 'err', text: '含有國際漫遊費用 $' + data.roaming.toLocaleString() + '，須勾選「公務出差」方可申報' };
-            case 'paid':
-                return { type: 'warn', text: '請確認費用已繳訖，並點擊「已繳費」按鈕' };
             default:
                 return null;
         }
     }
 
     // ============================================================
-    // 核心驗證
+    // 核心驗證（整合新規則引擎：職級限額 / 漫遊連動 / 繳費確認 / 科目月份）
     // ============================================================
     function runValidation() {
         const name = $('employeeName').value.trim();
@@ -729,39 +782,60 @@
         const roaming = parseRawAmount($('roamingAmount').value);
         const role = $('userRole').value;
         const limit = roleLimits[role];
-        const trip = $('isBusinessTrip').checked;
+        const isRoaming = $('isRoaming').checked;
+        const isTrip = $('isBusinessTrip').checked;
+        const paidChecked = $('isPaid').checked;
         const invMonth = invDate ? invDate.slice(0, 7) : null;
 
+        // ===== 4 項核心規則（對應用戶提供的規則引擎）=====
+
+        // 規則 1: 職級限額驗證
+        const limitPass = slipAmt > 0 && slipAmt <= limit;
+
+        // 規則 2: 漫遊申請資格（勾選漫遊 → 必須勾選出差）
+        const roamingPass = isRoaming ? isTrip : true;
+
+        // 規則 3: 繳費狀態核對
+        const paidPass = paidChecked;
+
+        // 規則 4: 科目與月份（代碼 M842 + 月份一致）
+        const isCodeM842 = code === 'M842';
+        const monthMatch = !!(slipMonth && invMonth && slipMonth === invMonth);
+        const subjectPass = isCodeM842 && monthMatch;
+
+        // ===== 額外輔助驗證 =====
         const isNameOK = !!name;
         const isAmountMatch = slipAmt > 0 && slipAmt === invAmt;
-        const isCodeMatch = code === 'M842';
-        const isMonthMatch = !!(slipMonth && invMonth && slipMonth === invMonth);
-        const isUnderLimit = slipAmt <= limit;
-        const isRoamingOK = roaming > 0 ? trip : true;
-        const isDocReady = isPaid;
 
-        // 代碼欄位 visual
-        $('slipCode').classList.toggle('field-warning', code !== '' && !isCodeMatch);
+        // ===== 視覺反饋 =====
 
-        // 金額超限 visual
+        // 代碼欄位
+        $('slipCode').classList.toggle('field-warning', code !== '' && !isCodeM842);
+
+        // 金額超限
         $('slipAmount').classList.toggle('text-red-600', slipAmt > limit);
         $('slipAmount').classList.toggle('text-blue-700', slipAmt <= limit);
         const overWarn = $('overLimitWarning');
         if (slipAmt > limit) {
-            overWarn.textContent = `▲ 已超過 ${roleLabels[role]} 額度上限 ($${limit.toLocaleString()})，超出 $${(slipAmt - limit).toLocaleString()}`;
+            overWarn.textContent = `▲ 超過${roleLabels[role]}限額 $${limit.toLocaleString()}，超出 $${(slipAmt - limit).toLocaleString()}`;
             overWarn.classList.remove('hidden');
+        } else if (slipAmt > 0) {
+            overWarn.textContent = `✓ ${roleLabels[role]}限額 $${limit.toLocaleString()}，剩餘額度 $${(limit - slipAmt).toLocaleString()}`;
+            overWarn.classList.remove('hidden');
+            overWarn.classList.remove('text-red-600');
+            overWarn.classList.add('text-emerald-500');
         } else {
             overWarn.classList.add('hidden');
+            overWarn.classList.remove('text-emerald-500');
         }
 
-        // 漫遊 visual
-        $('roamingWarning').classList.toggle('hidden', !(roaming > 0 && !trip));
-        $('roamingAmount').classList.toggle('field-warning', roaming > 0 && !trip);
+        // 漫遊警告
+        $('roamingWarning').classList.toggle('hidden', !isRoaming || isTrip);
 
         // 月份 box
         const box = $('invoiceMonthBox');
         if (invDate) {
-            if (isMonthMatch) {
+            if (monthMatch) {
                 box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-green-50 text-green-600 border-green-100';
             } else {
                 box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-red-50 text-red-500 border-red-100';
@@ -772,38 +846,36 @@
             box.textContent = '月份: --';
         }
 
-        // 共用資料包
-        const hintData = { slipAmt, invAmt, code, slipMonth, invMonth, role, limit, roaming };
+        // 共用資料
+        const expense = isCodeM842 ? '網路費用' : code;
+        const hintData = { slipAmt, invAmt, code, expense, slipMonth, invMonth, role, limit, roaming, monthMatch };
 
-        // [優化4] Compliance Check 含語意化訊息
+        // ===== Compliance Check 面板 =====
         const checks = [
             { key: 'name', active: isNameOK, label: '已確認姓名', detail: name || 'MISSING' },
             { key: 'amount', active: isAmountMatch, label: '金額核對', detail: isAmountMatch ? 'MATCH' : (slipAmt > 0 || invAmt > 0 ? `DIFF $${Math.abs(slipAmt - invAmt).toLocaleString()}` : 'EMPTY') },
-            { key: 'code', active: isCodeMatch, label: '科目代碼', detail: isCodeMatch ? 'M842 ✓' : (code || 'EMPTY') },
-            { key: 'month', active: isMonthMatch, label: '月份一致', detail: isMonthMatch ? 'OK' : 'MISMATCH' },
             { type: 'hr' },
-            { key: 'limit', active: isUnderLimit, label: '額度合規', detail: `UPTO $${limit.toLocaleString()}` },
-            { key: 'roaming', active: isRoamingOK, label: '漫遊許可', detail: roaming > 0 ? (trip ? '出差中' : '非核准') : '不適用' },
-            { key: 'paid', active: isDocReady, label: '費用繳訖', detail: isPaid ? '已確認' : '待補' },
+            { key: 'limit', active: limitPass, label: '職級限額驗證', detail: limitPass ? `符合 (${limit})` : (slipAmt > limit ? `超出上限 (${limit})` : 'EMPTY') },
+            { key: 'roaming', active: roamingPass, label: '漫遊申請資格', detail: !isRoaming ? '不適用' : (roamingPass ? '符合事由' : '需出差事由') },
+            { key: 'paid', active: paidPass, label: '繳費狀態核對', detail: paidPass ? '已確認繳費' : '尚未確認' },
+            { key: 'subject', active: subjectPass, label: '科目與月份', detail: subjectPass ? '核對通過' : (isCodeM842 ? '月份不符' : '科目錯誤') },
         ];
+
+        const iconOK = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+        const iconFail = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
 
         $('statusChecks').innerHTML = checks.map(c => {
             if (c.type === 'hr') return '<hr class="border-slate-800 my-1" />';
 
-            const icon = c.active
-                ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
-                : '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-
-            // [優化4] 語意化修復建議
             let hintHTML = '';
             if (!c.active) {
                 const hint = getFixHint(c.key, hintData);
                 if (hint) {
-                    const hintIcon = hint.type === 'err'
+                    const hIcon = hint.type === 'err'
                         ? '<svg class="w-3 h-3 flex-shrink-0 mt-px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
                         : '<svg class="w-3 h-3 flex-shrink-0 mt-px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-                    const bgCls = hint.type === 'err' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400';
-                    hintHTML = `<div class="mt-2 ${bgCls} rounded-lg px-3 py-2 text-[10px] font-bold flex items-start gap-1.5 leading-relaxed">${hintIcon}<span>${hint.text}</span></div>`;
+                    const bg = hint.type === 'err' ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-400';
+                    hintHTML = `<div class="mt-2 ${bg} rounded-lg px-3 py-2 text-[10px] font-bold flex items-start gap-1.5 leading-relaxed">${hIcon}<span>${hint.text}</span></div>`;
                 }
             }
 
@@ -811,7 +883,7 @@
                 <div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="status-dot ${c.active ? 'on' : 'off'}">${icon}</div>
+                            <div class="status-dot ${c.active ? 'on' : 'off'}">${c.active ? iconOK : iconFail}</div>
                             <span class="font-black text-xs uppercase tracking-tighter ${c.active ? 'text-white' : 'text-slate-600'}">${c.label}</span>
                         </div>
                         <span class="text-[9px] font-black italic tracking-widest ${c.active ? 'text-blue-400 underline underline-offset-4' : 'text-slate-800'}">${c.detail}</span>
@@ -821,8 +893,8 @@
             `;
         }).join('');
 
-        // 按鈕
-        const canSubmit = isNameOK && isAmountMatch && isCodeMatch && isMonthMatch && isUnderLimit && isRoamingOK && isDocReady;
+        // 按鈕（全部 7 項通過才可提交）
+        const canSubmit = isNameOK && isAmountMatch && limitPass && roamingPass && paidPass && subjectPass;
         const btn = $('submitBtn');
         if (canSubmit) {
             btn.disabled = false;
@@ -831,21 +903,9 @@
         } else {
             btn.disabled = true;
             btn.className = 'w-full mt-10 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none';
-            btn.textContent = '資訊未齊全';
+            const passCount = [isNameOK, isAmountMatch, limitPass, roamingPass, paidPass, subjectPass].filter(Boolean).length;
+            btn.textContent = `資訊未齊全 (${passCount}/6)`;
         }
-    }
-
-    // ============================================================
-    // 切換按鈕
-    // ============================================================
-    function togglePaid() {
-        isPaid = !isPaid;
-        $('btnPaid').className = isPaid ? 'toggle-btn active' : 'toggle-btn inactive';
-        runValidation();
-    }
-    function toggleStamp() {
-        hasStamp = !hasStamp;
-        $('btnStamp').className = hasStamp ? 'toggle-btn active' : 'toggle-btn inactive';
     }
 
     // ============================================================
@@ -890,9 +950,10 @@
             userRole: role,
             slipData: { code, month, amount: String(amount), roamingAmount: String(roaming) },
             invoiceData: { date: invDate, amount: String(invAmt), number: invNum },
+            isRoaming: $('isRoaming').checked,
             isBusinessTrip: $('isBusinessTrip').checked,
-            isPaid,
-            hasStamp,
+            isPaid: $('isPaid').checked,
+            hasStamp: $('hasStamp').checked,
             createdAt: new Date().toISOString(),
             month
         };
@@ -928,10 +989,14 @@
         $('invoiceDate').value = '';
         $('invoiceNumber').value = '';
         $('roamingAmount').value = '0';
-        isPaid = false;
-        hasStamp = false;
-        $('btnPaid').className = 'toggle-btn inactive';
-        $('btnStamp').className = 'toggle-btn inactive';
+        $('isRoaming').checked = false;
+        $('isBusinessTrip').checked = false;
+        $('isPaid').checked = false;
+        $('hasStamp').checked = false;
+        $('roamingAmountWrap').classList.add('hidden');
+        // 重設 checkbox label 狀態
+        updateCheckboxLabel('isPaid', 'paidLabel', 'paidText', 'paidSub', '已確認繳費', '繳費已確認', '點擊確認');
+        updateCheckboxLabel('hasStamp', 'stampLabel', 'stampText', 'stampSub', '已核對起訖章', '起訖章已確認', '點擊確認');
         $('invoiceMonthBox').className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-slate-50 text-slate-300 border-slate-100';
         $('invoiceMonthBox').textContent = '月份: --';
         runValidation();
