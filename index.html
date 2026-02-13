@@ -3,901 +3,779 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>費用核銷驗證系統</title>
+    <title>員工報支自動核對與追蹤</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Inter', sans-serif; }
+        body { background: #f8fafc; }
 
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-            min-height: 100vh;
-        }
+        /* 自訂圓角 */
+        .r-32 { border-radius: 32px; }
+        .r-40 { border-radius: 40px; }
+        .r-48 { border-radius: 48px; }
+        .r-24 { border-radius: 24px; }
 
-        /* 浮動背景光暈 */
-        .bg-glow {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.15;
-            pointer-events: none;
-            z-index: 0;
-        }
-        .bg-glow-1 { width: 600px; height: 600px; background: #6366f1; top: -200px; left: -100px; }
-        .bg-glow-2 { width: 500px; height: 500px; background: #06b6d4; bottom: -150px; right: -100px; }
-        .bg-glow-3 { width: 400px; height: 400px; background: #8b5cf6; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-
-        /* 玻璃擬態卡片 */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        /* 輸入框樣式 */
-        .form-input {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #f1f5f9;
-            transition: all 0.3s ease;
-        }
-        .form-input:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-            background: rgba(255, 255, 255, 0.08);
-        }
-        .form-input::placeholder { color: rgba(148, 163, 184, 0.6); }
-
-        .form-input.input-error {
-            border-color: #ef4444;
-            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-        }
-        .form-input.input-success {
-            border-color: #22c55e;
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-        }
-
-        /* 按鈕動畫 */
-        .btn-primary {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
-        }
-        .btn-primary:active { transform: translateY(0); }
-        .btn-primary::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* 狀態標籤 */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .badge-pending { background: rgba(234, 179, 8, 0.15); color: #facc15; }
-        .badge-approved { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
-        .badge-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-        /* 表格樣式 */
-        .data-table tr { transition: all 0.2s ease; }
-        .data-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
-
-        /* 提示訊息動畫 */
-        .toast {
-            animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* 淡入動畫 */
-        .fade-in {
-            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 載入脈動 */
-        .pulse-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.3); }
-        }
-
-        /* Modal 遮罩 */
-        .modal-overlay {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            transition: opacity 0.3s ease;
-        }
-
-        /* 驗證結果面板 */
-        .validation-panel {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+        /* 輸入框 */
+        .field-input {
+            width: 100%;
+            padding: 12px;
+            background: #f8fafc;
             border-radius: 12px;
-            overflow: hidden;
+            font-weight: 800;
+            outline: none;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .field-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        .field-input.field-warning {
+            border-color: #fbbf24;
+            color: #d97706;
+        }
+        .field-input.field-error {
+            border-color: #ef4444;
+            color: #dc2626;
         }
 
-        .validation-item {
+        /* 大金額輸入 */
+        .amount-input {
+            width: 100%;
+            background: transparent;
+            font-size: 2.25rem;
+            font-weight: 900;
+            outline: none;
+            border: none;
+        }
+        .amount-input::-webkit-inner-spin-button,
+        .amount-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .amount-input { -moz-appearance: textfield; }
+
+        /* 切換按鈕 */
+        .toggle-btn {
+            padding: 12px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 10px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            transition: background 0.2s ease;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
         }
-        .validation-item:last-child { border-bottom: none; }
-        .validation-item:hover { background: rgba(255, 255, 255, 0.02); }
-
-        .check-icon { color: #4ade80; }
-        .cross-icon { color: #f87171; }
-
-        /* 數字統計動畫 */
-        .stat-number {
-            background: linear-gradient(135deg, #e2e8f0, #f8fafc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .toggle-btn.active {
+            background: #2563eb;
+            color: white;
+            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.2);
+            transform: scale(1.05);
+        }
+        .toggle-btn.inactive {
+            background: #f1f5f9;
+            color: #cbd5e1;
         }
 
-        /* 滾動條 */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
+        /* 狀態指示燈 */
+        .status-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
         }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+        .status-dot.on {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.3);
+        }
+        .status-dot.off {
+            background: #1e293b;
+            color: #475569;
+        }
+
+        /* Toast 動畫 */
+        @keyframes slideIn {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-anim { animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Modal 縮放動畫 */
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .scale-in { animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* 掃描動畫 */
+        @keyframes scanning {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        /* 自訂滾動條 */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
     </style>
 </head>
-<body class="text-slate-200">
+<body class="min-h-screen p-4 lg:p-8 text-slate-900">
 
-    <!-- 背景光暈 -->
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
-    <div class="bg-glow bg-glow-3"></div>
-
-    <!-- 提示訊息容器 -->
+    <!-- Toast 容器 -->
     <div id="toastContainer" class="fixed top-6 right-6 z-50 flex flex-col gap-3"></div>
 
-    <!-- 頂部導覽列 -->
-    <header class="relative z-10 border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    <!-- ===== 頂部導航 ===== -->
+    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-center gap-6 bg-white p-6 r-32 shadow-sm border border-slate-200">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-600 r-24 flex items-center justify-center text-white shadow-lg">
+                <!-- Database icon -->
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-slate-800 tracking-tight">員工報支自動核對與追蹤</h1>
+                <div class="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                    <svg class="w-3 h-3 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
                     </svg>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold text-white tracking-tight">費用核銷驗證系統</h1>
-                    <p class="text-xs text-slate-400">Invoice Verification System</p>
+                    Local Storage Active
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2 text-xs text-slate-400">
-                    <div class="pulse-dot bg-emerald-400"></div>
-                    <span>系統運行中</span>
+        </div>
+        <div class="flex items-center gap-4 flex-1 max-w-xl">
+            <div class="relative flex-1 group">
+                <!-- User icon -->
+                <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input
+                    type="text"
+                    id="employeeName"
+                    placeholder="輸入姓名/編號..."
+                    class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
+                />
+                <div id="identityBadge" class="absolute right-3 top-1/2 -translate-y-1/2 bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-black uppercase hidden">
+                    已識別身分
                 </div>
-                <div class="text-xs text-slate-500" id="currentDateTime"></div>
+            </div>
+            <div class="bg-slate-50 p-1 rounded-2xl border border-slate-100 flex items-center shadow-inner">
+                <select id="userRole" class="bg-transparent px-4 py-2 font-black text-xs text-blue-600 outline-none cursor-pointer">
+                    <option value="manager">主管 (1399)</option>
+                    <option value="staff" selected>一般員工 (800)</option>
+                    <option value="special">特定專案 (500)</option>
+                </select>
             </div>
         </div>
     </header>
 
-    <!-- 主內容區 -->
-    <main class="relative z-10 max-w-7xl mx-auto px-6 py-8">
+    <!-- ===== 主內容 ===== -->
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- 統計卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 fade-in">
-            <div class="glass-card rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">待驗證</span>
-                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        <!-- ====== 左側：數據操作區 (8 cols) ====== -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- 影像辨識區 -->
+            <section class="bg-white r-40 p-8 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-black flex items-center gap-2 text-slate-700 italic">
+                        <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
                         </svg>
+                        影像自動辨識與提取
+                    </h2>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <svg class="w-4 h-4 text-slate-300" id="tripIcon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                        <span class="text-xs font-black text-slate-500">公務出差</span>
+                        <input type="checkbox" id="isBusinessTrip" class="w-4 h-4 rounded accent-blue-600" />
+                    </label>
+                </div>
+
+                <!-- 上傳區域 -->
+                <div id="uploadArea">
+                    <label class="border-4 border-dashed border-slate-50 r-32 h-48 flex flex-col items-center justify-center cursor-pointer hover:border-blue-200 hover:bg-blue-50/20 transition-all group">
+                        <input type="file" class="hidden" accept="image/*" id="fileInput" />
+                        <svg class="w-8 h-8 text-slate-200 group-hover:text-blue-400 mb-2 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <span class="font-black text-slate-300 text-sm tracking-widest uppercase">Take / Upload Photo</span>
+                    </label>
+                </div>
+
+                <!-- 預覽區域 (隱藏) -->
+                <div id="previewArea" class="hidden relative h-48 r-32 bg-slate-900 overflow-hidden shadow-2xl">
+                    <img id="previewImage" src="" alt="preview" class="w-full h-full object-contain opacity-50" />
+                    <div id="scanOverlay" class="absolute inset-0 hidden flex-col items-center justify-center bg-blue-900/40 backdrop-blur-md">
+                        <svg class="w-8 h-8 animate-spin text-white mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                        </svg>
+                        <span class="text-white font-black text-xs tracking-widest animate-pulse uppercase italic">Syncing with AI Engine</span>
+                    </div>
+                    <button onclick="clearPreview()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/40 p-2 rounded-full text-white backdrop-blur-md transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 雙面板：驗收單 + 發票 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- 驗收單面板 -->
+                <div class="bg-white r-40 p-8 shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-2 mb-6 border-b pb-4 text-blue-600">
+                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        <h3 class="font-black italic uppercase tracking-tighter">驗收單內容 (Slip)</h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">會計科目</label>
+                            <input type="text" id="slipCode" value="M842" class="field-input" />
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">帳單月份</label>
+                            <input type="month" id="slipMonth" class="field-input" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">國際漫遊金額</label>
+                        <input type="number" id="roamingAmount" value="0" class="field-input" />
+                        <p id="roamingWarning" class="text-[10px] text-red-500 font-black mt-1 italic hidden">! 非公務出差不得申報漫遊費用</p>
+                    </div>
+
+                    <div class="mt-6 p-6 bg-blue-50/50 rounded-3xl border border-blue-100/50">
+                        <label class="text-[10px] font-black text-blue-400 uppercase mb-1 block">申報金額 (TWD)</label>
+                        <input type="number" id="slipAmount" class="amount-input text-blue-700" placeholder="0" />
+                        <p id="overLimitWarning" class="text-[10px] text-red-600 font-black mt-2 hidden"></p>
                     </div>
                 </div>
-                <div class="text-2xl font-bold stat-number" id="statPending">0</div>
-            </div>
-            <div class="glass-card rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">已通過</span>
-                    <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+
+                <!-- 發票面板 -->
+                <div class="bg-white r-40 p-8 shadow-sm border border-slate-200">
+                    <div class="flex items-center gap-2 mb-6 border-b pb-4 text-indigo-600">
+                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
                         </svg>
+                        <h3 class="font-black italic uppercase tracking-tighter">發票憑證 (Invoice)</h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 block mb-1 uppercase tracking-widest">憑證日期</label>
+                            <input type="date" id="invoiceDate" class="field-input" />
+                        </div>
+                        <div id="invoiceMonthBox" class="p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-slate-50 text-slate-300 border-slate-100">
+                            月份: --
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <button id="btnPaid" onclick="togglePaid()" class="toggle-btn inactive">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            已繳費
+                        </button>
+                        <button id="btnStamp" onclick="toggleStamp()" class="toggle-btn inactive">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                            </svg>
+                            有起訖章
+                        </button>
+                    </div>
+
+                    <div class="mt-4 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                        <label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">憑證記載總額</label>
+                        <input type="number" id="invoiceAmount" class="amount-input text-slate-700" placeholder="0" />
                     </div>
                 </div>
-                <div class="text-2xl font-bold stat-number" id="statApproved">0</div>
-            </div>
-            <div class="glass-card rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">未通過</span>
-                    <div class="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold stat-number" id="statRejected">0</div>
-            </div>
-            <div class="glass-card rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">總筆數</span>
-                    <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="text-2xl font-bold stat-number" id="statTotal">0</div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- ====== 右側：狀態檢查 + 歷史 (4 cols) ====== -->
+        <div class="lg:col-span-4 space-y-6">
 
-            <!-- 左側：表單 -->
-            <div class="lg:col-span-1 fade-in" style="animation-delay: 0.1s;">
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                        </div>
-                        <h2 class="text-base font-semibold text-white">新增核銷驗證</h2>
-                    </div>
+            <!-- Compliance Check -->
+            <section class="bg-slate-900 text-white r-40 p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-bl-full"></div>
 
-                    <form id="verifyForm" class="space-y-4" onsubmit="return false;">
-                        <!-- 確認代碼 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">確認代碼 <span class="text-red-400">*</span></label>
-                            <input type="text" id="confirmCode" class="form-input w-full px-4 py-2.5 rounded-xl text-sm" placeholder="請輸入確認代碼" autocomplete="off">
-                            <p class="text-xs mt-1.5 text-slate-500" id="codeHint">系統將驗證代碼是否正確</p>
-                        </div>
+                <h2 class="text-lg font-black mb-8 flex items-center gap-2 relative z-10 italic underline decoration-blue-500 underline-offset-8">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    Compliance Check
+                </h2>
 
-                        <!-- 費用項目 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">費用項目 <span class="text-red-400">*</span></label>
-                            <select id="expenseType" class="form-input w-full px-4 py-2.5 rounded-xl text-sm appearance-none cursor-pointer">
-                                <option value="">請選擇費用項目</option>
-                                <option value="網路費用">網路費用</option>
-                                <option value="辦公用品">辦公用品</option>
-                                <option value="交通費用">交通費用</option>
-                                <option value="餐飲費用">餐飲費用</option>
-                                <option value="設備維護">設備維護</option>
-                            </select>
-                        </div>
-
-                        <!-- 核銷金額 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">核銷金額 (NT$) <span class="text-red-400">*</span></label>
-                            <input type="number" id="amount" class="form-input w-full px-4 py-2.5 rounded-xl text-sm" placeholder="請輸入金額" min="0">
-                        </div>
-
-                        <!-- 核銷月份 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">核銷月份 <span class="text-red-400">*</span></label>
-                            <input type="month" id="claimMonth" class="form-input w-full px-4 py-2.5 rounded-xl text-sm">
-                        </div>
-
-                        <!-- 發票日期 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">發票日期 <span class="text-red-400">*</span></label>
-                            <input type="date" id="invoiceDate" class="form-input w-full px-4 py-2.5 rounded-xl text-sm">
-                        </div>
-
-                        <!-- 發票號碼 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">發票號碼</label>
-                            <input type="text" id="invoiceNumber" class="form-input w-full px-4 py-2.5 rounded-xl text-sm" placeholder="例：AB-12345678">
-                        </div>
-
-                        <!-- 備註 -->
-                        <div>
-                            <label class="block text-xs font-medium text-slate-400 mb-1.5">備註說明</label>
-                            <textarea id="remarks" class="form-input w-full px-4 py-2.5 rounded-xl text-sm resize-none" rows="2" placeholder="選填備註..."></textarea>
-                        </div>
-
-                        <!-- 驗證結果預覽 -->
-                        <div id="validationPreview" class="validation-panel hidden">
-                            <div class="px-4 py-3 border-b border-white/5">
-                                <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">驗證結果預覽</span>
-                            </div>
-                            <div id="validationItems"></div>
-                        </div>
-
-                        <!-- 按鈕 -->
-                        <div class="flex gap-3 pt-2">
-                            <button type="button" onclick="validateForm()" class="btn-primary flex-1 py-2.5 rounded-xl text-sm font-semibold text-white">
-                                驗證並提交
-                            </button>
-                            <button type="button" onclick="resetForm()" class="btn-secondary py-2.5 px-4 rounded-xl text-sm font-medium text-slate-300">
-                                清除
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- 右側：記錄列表 -->
-            <div class="lg:col-span-2 fade-in" style="animation-delay: 0.2s;">
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                </svg>
-                            </div>
-                            <h2 class="text-base font-semibold text-white">驗證記錄</h2>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="filterRecords('all')" class="filter-btn text-xs px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all active" data-filter="all">全部</button>
-                            <button onclick="filterRecords('approved')" class="filter-btn text-xs px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all" data-filter="approved">通過</button>
-                            <button onclick="filterRecords('rejected')" class="filter-btn text-xs px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-all" data-filter="rejected">未通過</button>
-                        </div>
-                    </div>
-
-                    <!-- 表格 -->
-                    <div class="overflow-x-auto">
-                        <table class="data-table w-full text-sm">
-                            <thead>
-                                <tr class="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-white/5">
-                                    <th class="pb-3 pr-4 font-medium">時間</th>
-                                    <th class="pb-3 pr-4 font-medium">代碼</th>
-                                    <th class="pb-3 pr-4 font-medium">費用項目</th>
-                                    <th class="pb-3 pr-4 font-medium">金額</th>
-                                    <th class="pb-3 pr-4 font-medium">核銷月 / 發票日</th>
-                                    <th class="pb-3 pr-4 font-medium">狀態</th>
-                                    <th class="pb-3 font-medium">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recordsBody" class="text-slate-300">
-                                <tr>
-                                    <td colspan="7" class="py-16 text-center text-slate-500">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                            </svg>
-                                            <span class="text-sm">尚無驗證記錄</span>
-                                            <span class="text-xs text-slate-600">請從左側表單新增核銷驗證</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="space-y-6 relative z-10" id="statusChecks">
+                    <!-- 動態生成 -->
                 </div>
 
-                <!-- 驗證規則說明 -->
-                <div class="glass-card rounded-2xl p-6 mt-4">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                        <h2 class="text-base font-semibold text-white">驗證規則</h2>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02]">
-                            <div class="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <span class="text-xs font-bold text-indigo-400">1</span>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-300 mb-1">確認代碼驗證</p>
-                                <p class="text-xs text-slate-500">代碼必須為 <code class="px-1.5 py-0.5 rounded bg-white/5 text-indigo-300 font-mono">M842</code> 方可通過</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02]">
-                            <div class="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <span class="text-xs font-bold text-indigo-400">2</span>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-300 mb-1">費用項目確認</p>
-                                <p class="text-xs text-slate-500">費用項目須為 <code class="px-1.5 py-0.5 rounded bg-white/5 text-indigo-300">網路費用</code></p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02]">
-                            <div class="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <span class="text-xs font-bold text-indigo-400">3</span>
-                            </div>
-                            <div>
-                                <p class="text-xs font-semibold text-slate-300 mb-1">月份一致性</p>
-                                <p class="text-xs text-slate-500">核銷月份須與發票日期的月份相同</p>
-                            </div>
-                        </div>
-                    </div>
+                <button
+                    id="submitBtn"
+                    onclick="handleSave()"
+                    disabled
+                    class="w-full mt-12 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none"
+                >
+                    資訊未齊全
+                </button>
+            </section>
+
+            <!-- 個人申請歷史 -->
+            <section class="bg-white r-32 p-6 shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between mb-4 border-b pb-4">
+                    <h3 class="text-sm font-black text-slate-800 flex items-center gap-2 uppercase tracking-tighter">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        個人申請歷史
+                    </h3>
+                    <svg class="w-4 h-4 text-slate-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+                    </svg>
                 </div>
-            </div>
+                <div id="historyList" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <div class="py-8 text-center text-slate-300 font-bold text-xs uppercase tracking-widest italic">Enter name to track history</div>
+                </div>
+            </section>
         </div>
     </main>
 
-    <!-- 詳細資訊 Modal -->
-    <div id="detailModal" class="fixed inset-0 z-50 hidden items-center justify-center">
-        <div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>
-        <div class="glass-card rounded-2xl p-6 w-full max-w-md relative z-10 mx-4" style="background: rgba(15, 23, 42, 0.95);">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="text-base font-semibold text-white">驗證詳細資訊</h3>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
+    <!-- ===== 成功 Modal ===== -->
+    <div id="successModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-xl hidden items-center justify-center p-4 z-50">
+        <div class="bg-white r-48 p-12 max-w-sm w-full text-center shadow-2xl scale-in">
+            <div class="w-24 h-24 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <svg class="w-14 h-14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
             </div>
-            <div id="modalContent"></div>
+            <h3 class="text-3xl font-black text-slate-900 mb-2 tracking-tighter uppercase italic">Verified</h3>
+            <p class="text-slate-400 font-bold text-[10px] mb-8 tracking-[0.5em] uppercase">Record Saved Successfully</p>
+            <div id="modalSummary" class="bg-slate-50 rounded-3xl p-6 text-left mb-10 space-y-3 font-bold text-xs">
+            </div>
+            <button onclick="closeSuccessModal()" class="w-full py-5 bg-slate-900 text-white rounded-3xl font-black text-lg hover:bg-blue-600 transition-all shadow-xl">
+                處理下一筆
+            </button>
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto mt-12 py-8 text-center text-slate-300 font-black text-[10px] tracking-[0.8em] uppercase opacity-40">
+        AI Intelligent Auditor &bull; Persistence
+    </footer>
+
     <script>
-        // ========== 資料儲存 ==========
-        let records = JSON.parse(localStorage.getItem('verifyRecords') || '[]');
-        let currentFilter = 'all';
+    // ============================================================
+    // 狀態管理
+    // ============================================================
+    let records = JSON.parse(localStorage.getItem('expenseRecords') || '[]');
+    let profiles = JSON.parse(localStorage.getItem('employeeProfiles') || '{}');
+    let isPaid = false;
+    let hasStamp = false;
 
-        // ========== 常量 ==========
-        const VALID_CODE = 'M842';
-        const VALID_EXPENSE = '網路費用';
+    // 角色額度上限
+    const roleLimits = { manager: 1399, staff: 800, special: 500 };
 
-        // ========== 初始化 ==========
-        function init() {
-            updateDateTime();
-            setInterval(updateDateTime, 1000);
-            renderRecords();
-            updateStats();
-            setDefaultDates();
+    // ============================================================
+    // DOM 快取
+    // ============================================================
+    const $ = id => document.getElementById(id);
 
-            // 即時驗證：代碼輸入
-            document.getElementById('confirmCode').addEventListener('input', function() {
-                liveValidate();
-            });
-            // 即時驗證：費用選擇
-            document.getElementById('expenseType').addEventListener('change', function() {
-                liveValidate();
-            });
-            // 即時驗證：月份與日期
-            document.getElementById('claimMonth').addEventListener('change', liveValidate);
-            document.getElementById('invoiceDate').addEventListener('change', liveValidate);
-        }
+    // ============================================================
+    // 初始化
+    // ============================================================
+    function init() {
+        // 設定預設月份
+        const now = new Date();
+        $('slipMonth').value = now.toISOString().slice(0, 7);
 
-        // ========== 日期時間 ==========
-        function updateDateTime() {
-            const now = new Date();
-            const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-            document.getElementById('currentDateTime').textContent = now.toLocaleDateString('zh-TW', options);
-        }
-
-        function setDefaultDates() {
-            const now = new Date();
-            const monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-            document.getElementById('claimMonth').value = monthStr;
-        }
-
-        // ========== 即時驗證預覽 ==========
-        function liveValidate() {
-            const code = document.getElementById('confirmCode').value.trim();
-            const expense = document.getElementById('expenseType').value;
-            const claimMonth = document.getElementById('claimMonth').value;
-            const invoiceDate = document.getElementById('invoiceDate').value;
-
-            // 至少要輸入代碼才顯示預覽
-            if (!code && !expense && !claimMonth && !invoiceDate) {
-                document.getElementById('validationPreview').classList.add('hidden');
-                return;
-            }
-
-            const checks = getValidationChecks(code, expense, claimMonth, invoiceDate);
-            const panel = document.getElementById('validationPreview');
-            const items = document.getElementById('validationItems');
-
-            panel.classList.remove('hidden');
-            items.innerHTML = checks.map(check => `
-                <div class="validation-item">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs ${check.pass ? 'text-slate-300' : 'text-slate-400'}">${check.label}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs ${check.pass ? 'text-emerald-400' : check.value ? 'text-red-400' : 'text-slate-600'}">${check.message}</span>
-                        ${check.value ? (check.pass
-                            ? '<svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>'
-                            : '<svg class="w-4 h-4 cross-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>'
-                        ) : '<div class="w-4 h-4 rounded-full border border-slate-600"></div>'}
-                    </div>
-                </div>
-            `).join('');
-
-            // 即時反饋：代碼輸入框
-            const codeInput = document.getElementById('confirmCode');
-            const codeHint = document.getElementById('codeHint');
-            if (code) {
-                if (code === VALID_CODE) {
-                    codeInput.classList.remove('input-error');
-                    codeInput.classList.add('input-success');
-                    codeHint.textContent = '代碼驗證通過';
-                    codeHint.classList.remove('text-red-400');
-                    codeHint.classList.add('text-emerald-400');
-                } else {
-                    codeInput.classList.remove('input-success');
-                    codeInput.classList.add('input-error');
-                    codeHint.textContent = '代碼不正確';
-                    codeHint.classList.remove('text-emerald-400', 'text-slate-500');
-                    codeHint.classList.add('text-red-400');
-                }
-            } else {
-                codeInput.classList.remove('input-error', 'input-success');
-                codeHint.textContent = '系統將驗證代碼是否正確';
-                codeHint.classList.remove('text-red-400', 'text-emerald-400');
-                codeHint.classList.add('text-slate-500');
-            }
-        }
-
-        // ========== 驗證邏輯 ==========
-        function getValidationChecks(code, expense, claimMonth, invoiceDate) {
-            // 月份比對
-            let monthMatch = null;
-            let invoiceMonthStr = '';
-            if (claimMonth && invoiceDate) {
-                const invoiceMonth = invoiceDate.substring(0, 7); // "YYYY-MM"
-                invoiceMonthStr = invoiceMonth;
-                monthMatch = (claimMonth === invoiceMonth);
-            }
-
-            return [
-                {
-                    label: '確認代碼',
-                    value: code,
-                    pass: code === VALID_CODE,
-                    message: !code ? '尚未輸入' : (code === VALID_CODE ? '驗證通過 (M842)' : `不正確 (${code})`)
-                },
-                {
-                    label: '費用項目',
-                    value: expense,
-                    pass: expense === VALID_EXPENSE,
-                    message: !expense ? '尚未選擇' : (expense === VALID_EXPENSE ? '網路費用 ✓' : `非指定項目 (${expense})`)
-                },
-                {
-                    label: '月份一致性',
-                    value: claimMonth && invoiceDate ? true : false,
-                    pass: monthMatch === true,
-                    message: (!claimMonth || !invoiceDate) ? '尚未填寫完整' : (monthMatch ? '月份一致' : `不一致 (${claimMonth} ≠ ${invoiceMonthStr})`)
-                }
-            ];
-        }
-
-        // ========== 表單驗證與提交 ==========
-        function validateForm() {
-            const code = document.getElementById('confirmCode').value.trim();
-            const expense = document.getElementById('expenseType').value;
-            const amount = document.getElementById('amount').value;
-            const claimMonth = document.getElementById('claimMonth').value;
-            const invoiceDate = document.getElementById('invoiceDate').value;
-            const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
-            const remarks = document.getElementById('remarks').value.trim();
-
-            // 基本必填驗證
-            if (!code || !expense || !amount || !claimMonth || !invoiceDate) {
-                showToast('請填寫所有必填欄位', 'error');
-                return;
-            }
-
-            if (parseFloat(amount) <= 0) {
-                showToast('金額必須大於 0', 'error');
-                return;
-            }
-
-            // 三項驗證
-            const checks = getValidationChecks(code, expense, claimMonth, invoiceDate);
-            const allPassed = checks.every(c => c.pass);
-
-            // 建立記錄
-            const record = {
-                id: Date.now(),
-                timestamp: new Date().toISOString(),
-                code,
-                expense,
-                amount: parseFloat(amount),
-                claimMonth,
-                invoiceDate,
-                invoiceNumber,
-                remarks,
-                checks,
-                status: allPassed ? 'approved' : 'rejected'
-            };
-
-            records.unshift(record);
-            localStorage.setItem('verifyRecords', JSON.stringify(records));
-
-            renderRecords();
-            updateStats();
-
-            if (allPassed) {
-                showToast('驗證通過！核銷記錄已建立', 'success');
-            } else {
-                const failCount = checks.filter(c => !c.pass).length;
-                showToast(`驗證未通過，共 ${failCount} 項不符合`, 'error');
-            }
-
-            resetForm();
-        }
-
-        // ========== 渲染記錄 ==========
-        function renderRecords() {
-            const tbody = document.getElementById('recordsBody');
-            let filtered = records;
-
-            if (currentFilter === 'approved') filtered = records.filter(r => r.status === 'approved');
-            else if (currentFilter === 'rejected') filtered = records.filter(r => r.status === 'rejected');
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="py-16 text-center text-slate-500">
-                            <div class="flex flex-col items-center gap-3">
-                                <svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span class="text-sm">${currentFilter === 'all' ? '尚無驗證記錄' : '沒有符合篩選條件的記錄'}</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = filtered.map(r => {
-                const time = new Date(r.timestamp);
-                const timeStr = `${String(time.getMonth() + 1).padStart(2, '0')}/${String(time.getDate()).padStart(2, '0')} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-                const statusBadge = r.status === 'approved'
-                    ? '<span class="badge badge-approved"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>通過</span>'
-                    : '<span class="badge badge-rejected"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>未通過</span>';
-
-                return `
-                    <tr class="border-b border-white/[0.03]">
-                        <td class="py-3 pr-4 text-xs text-slate-400">${timeStr}</td>
-                        <td class="py-3 pr-4">
-                            <code class="text-xs px-2 py-0.5 rounded ${r.code === VALID_CODE ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'} font-mono">${r.code}</code>
-                        </td>
-                        <td class="py-3 pr-4 text-xs">${r.expense}</td>
-                        <td class="py-3 pr-4 text-xs font-medium">NT$ ${r.amount.toLocaleString()}</td>
-                        <td class="py-3 pr-4 text-xs text-slate-400">${r.claimMonth} / ${r.invoiceDate}</td>
-                        <td class="py-3 pr-4">${statusBadge}</td>
-                        <td class="py-3">
-                            <div class="flex items-center gap-2">
-                                <button onclick="viewDetail(${r.id})" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">詳情</button>
-                                <button onclick="deleteRecord(${r.id})" class="text-xs text-slate-500 hover:text-red-400 transition-colors">刪除</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // ========== 篩選 ==========
-        function filterRecords(filter) {
-            currentFilter = filter;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === filter);
-                btn.classList.toggle('text-white', btn.dataset.filter === filter);
-                btn.classList.toggle('bg-white/10', btn.dataset.filter === filter);
-            });
-            renderRecords();
-        }
-
-        // ========== 統計 ==========
-        function updateStats() {
-            const pending = records.filter(r => r.status === 'pending').length;
-            const approved = records.filter(r => r.status === 'approved').length;
-            const rejected = records.filter(r => r.status === 'rejected').length;
-            const total = records.length;
-
-            animateNumber('statPending', pending);
-            animateNumber('statApproved', approved);
-            animateNumber('statRejected', rejected);
-            animateNumber('statTotal', total);
-        }
-
-        function animateNumber(id, target) {
-            const el = document.getElementById(id);
-            const current = parseInt(el.textContent) || 0;
-            if (current === target) return;
-
-            const duration = 400;
-            const start = performance.now();
-
-            function step(timestamp) {
-                const progress = Math.min((timestamp - start) / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                el.textContent = Math.round(current + (target - current) * eased);
-                if (progress < 1) requestAnimationFrame(step);
-            }
-            requestAnimationFrame(step);
-        }
-
-        // ========== 詳情 Modal ==========
-        function viewDetail(id) {
-            const record = records.find(r => r.id === id);
-            if (!record) return;
-
-            const modal = document.getElementById('detailModal');
-            const content = document.getElementById('modalContent');
-
-            const statusLabel = record.status === 'approved'
-                ? '<span class="badge badge-approved"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>驗證通過</span>'
-                : '<span class="badge badge-rejected"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>驗證未通過</span>';
-
-            content.innerHTML = `
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-slate-500">驗證狀態</span>
-                        ${statusLabel}
-                    </div>
-                    <div class="validation-panel">
-                        ${record.checks.map(c => `
-                            <div class="validation-item">
-                                <span class="text-xs text-slate-300">${c.label}</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs ${c.pass ? 'text-emerald-400' : 'text-red-400'}">${c.message}</span>
-                                    ${c.pass
-                                        ? '<svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>'
-                                        : '<svg class="w-4 h-4 cross-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>'
-                                    }
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="space-y-2 pt-2">
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">確認代碼</span>
-                            <code class="font-mono text-slate-300">${record.code}</code>
-                        </div>
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">費用項目</span>
-                            <span class="text-slate-300">${record.expense}</span>
-                        </div>
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">核銷金額</span>
-                            <span class="text-slate-300 font-medium">NT$ ${record.amount.toLocaleString()}</span>
-                        </div>
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">核銷月份</span>
-                            <span class="text-slate-300">${record.claimMonth}</span>
-                        </div>
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">發票日期</span>
-                            <span class="text-slate-300">${record.invoiceDate}</span>
-                        </div>
-                        ${record.invoiceNumber ? `
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">發票號碼</span>
-                            <span class="text-slate-300">${record.invoiceNumber}</span>
-                        </div>` : ''}
-                        ${record.remarks ? `
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">備註</span>
-                            <span class="text-slate-300">${record.remarks}</span>
-                        </div>` : ''}
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">驗證時間</span>
-                            <span class="text-slate-300">${new Date(record.timestamp).toLocaleString('zh-TW')}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('detailModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        // ========== 刪除記錄 ==========
-        function deleteRecord(id) {
-            records = records.filter(r => r.id !== id);
-            localStorage.setItem('verifyRecords', JSON.stringify(records));
-            renderRecords();
-            updateStats();
-            showToast('記錄已刪除', 'info');
-        }
-
-        // ========== Toast 訊息 ==========
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const colors = {
-                success: 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/20 text-emerald-300',
-                error: 'from-red-500/20 to-red-500/5 border-red-500/20 text-red-300',
-                info: 'from-blue-500/20 to-blue-500/5 border-blue-500/20 text-blue-300'
-            };
-            const icons = {
-                success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>',
-                error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
-                info: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>'
-            };
-
-            const toast = document.createElement('div');
-            toast.className = `toast bg-gradient-to-r ${colors[type]} border rounded-xl px-4 py-3 flex items-center gap-3 backdrop-blur-xl`;
-            toast.innerHTML = `
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">${icons[type]}</svg>
-                <span class="text-sm font-medium">${message}</span>
-            `;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                toast.style.transition = 'all 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        // ========== 重設表單 ==========
-        function resetForm() {
-            document.getElementById('confirmCode').value = '';
-            document.getElementById('expenseType').value = '';
-            document.getElementById('amount').value = '';
-            document.getElementById('invoiceDate').value = '';
-            document.getElementById('invoiceNumber').value = '';
-            document.getElementById('remarks').value = '';
-            document.getElementById('validationPreview').classList.add('hidden');
-
-            const codeInput = document.getElementById('confirmCode');
-            const codeHint = document.getElementById('codeHint');
-            codeInput.classList.remove('input-error', 'input-success');
-            codeHint.textContent = '系統將驗證代碼是否正確';
-            codeHint.classList.remove('text-red-400', 'text-emerald-400');
-            codeHint.classList.add('text-slate-500');
-
-            setDefaultDates();
-        }
-
-        // ========== 鍵盤事件 ==========
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
+        // 綁定所有即時驗證事件
+        const liveFields = ['employeeName', 'slipCode', 'slipMonth', 'slipAmount', 'invoiceDate', 'invoiceAmount', 'roamingAmount'];
+        liveFields.forEach(id => {
+            $(id).addEventListener('input', runValidation);
+            $(id).addEventListener('change', runValidation);
         });
 
-        // ========== 啟動 ==========
-        init();
+        $('userRole').addEventListener('change', () => {
+            runValidation();
+        });
+
+        $('isBusinessTrip').addEventListener('change', () => {
+            const icon = $('tripIcon');
+            if ($('isBusinessTrip').checked) {
+                icon.classList.remove('text-slate-300');
+                icon.classList.add('text-blue-500');
+            } else {
+                icon.classList.remove('text-blue-500');
+                icon.classList.add('text-slate-300');
+            }
+            runValidation();
+        });
+
+        // 姓名改變 -> 載入身分
+        $('employeeName').addEventListener('input', () => {
+            const name = $('employeeName').value.trim();
+            if (name && profiles[name]) {
+                $('userRole').value = profiles[name].role;
+                $('identityBadge').classList.remove('hidden');
+            } else {
+                $('identityBadge').classList.add('hidden');
+            }
+            renderHistory();
+        });
+
+        // 發票日期改變 -> 顯示月份
+        $('invoiceDate').addEventListener('change', () => {
+            const val = $('invoiceDate').value;
+            const box = $('invoiceMonthBox');
+            if (val) {
+                const m = val.slice(0, 7);
+                const slipM = $('slipMonth').value;
+                if (slipM && slipM === m) {
+                    box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-green-50 text-green-600 border-green-100';
+                } else {
+                    box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-red-50 text-red-500 border-red-100';
+                }
+                box.textContent = '月份: ' + m;
+            } else {
+                box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-slate-50 text-slate-300 border-slate-100';
+                box.textContent = '月份: --';
+            }
+        });
+
+        // 圖片上傳
+        $('fileInput').addEventListener('change', handleFileUpload);
+
+        // 初始驗證
+        runValidation();
+        renderHistory();
+    }
+
+    // ============================================================
+    // 核心驗證邏輯
+    // ============================================================
+    function runValidation() {
+        const name = $('employeeName').value.trim();
+        const code = $('slipCode').value.trim().toUpperCase();
+        const slipMonth = $('slipMonth').value;
+        const slipAmt = parseFloat($('slipAmount').value) || 0;
+        const invDate = $('invoiceDate').value;
+        const invAmt = parseFloat($('invoiceAmount').value) || 0;
+        const roaming = parseFloat($('roamingAmount').value) || 0;
+        const role = $('userRole').value;
+        const limit = roleLimits[role];
+        const trip = $('isBusinessTrip').checked;
+
+        const invMonth = invDate ? invDate.slice(0, 7) : null;
+
+        // 計算各驗證項
+        const isNameOK = !!name;
+        const isAmountMatch = slipAmt > 0 && slipAmt === invAmt;
+        const isCodeMatch = code === 'M842';
+        const isMonthMatch = slipMonth && invMonth && slipMonth === invMonth;
+        const isUnderLimit = slipAmt <= limit;
+        const isRoamingOK = roaming > 0 ? trip : true;
+        const isDocReady = isPaid;
+
+        const amountDiff = Math.abs(slipAmt - invAmt);
+
+        // 代碼欄位警告
+        const codeInput = $('slipCode');
+        if (code && !isCodeMatch) {
+            codeInput.classList.add('field-warning');
+        } else {
+            codeInput.classList.remove('field-warning');
+        }
+
+        // 金額超限警告
+        const amtInput = $('slipAmount');
+        const overWarn = $('overLimitWarning');
+        if (slipAmt > limit) {
+            amtInput.classList.add('text-red-600');
+            amtInput.classList.remove('text-blue-700');
+            overWarn.textContent = `▲ 已超過身分額度上限 ($${limit})`;
+            overWarn.classList.remove('hidden');
+        } else {
+            amtInput.classList.remove('text-red-600');
+            amtInput.classList.add('text-blue-700');
+            overWarn.classList.add('hidden');
+        }
+
+        // 漫遊警告
+        const roamWarn = $('roamingWarning');
+        const roamInput = $('roamingAmount');
+        if (roaming > 0 && !trip) {
+            roamWarn.classList.remove('hidden');
+            roamInput.classList.add('field-warning');
+        } else {
+            roamWarn.classList.add('hidden');
+            roamInput.classList.remove('field-warning');
+        }
+
+        // 發票月份顯示
+        const box = $('invoiceMonthBox');
+        if (invDate) {
+            if (isMonthMatch) {
+                box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-green-50 text-green-600 border-green-100';
+            } else {
+                box.className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-red-50 text-red-500 border-red-100';
+            }
+            box.textContent = '月份: ' + invMonth;
+        }
+
+        // 渲染右側狀態面板
+        const checks = [
+            { active: isNameOK, label: '已確認姓名', detail: name || 'MISSING' },
+            { active: isAmountMatch, label: '金額核對', detail: isAmountMatch ? 'MATCH' : `DIFF $${amountDiff}` },
+            { active: isMonthMatch, label: '月份一致', detail: isMonthMatch ? 'OK' : 'ERROR' },
+            { type: 'hr' },
+            { active: isUnderLimit, label: '額度合規', detail: `UPTO ${limit}` },
+            { active: isRoamingOK, label: '漫遊許可', detail: roaming > 0 ? (trip ? '出差中' : '非核准') : '不適用' },
+            { active: isDocReady, label: '費用繳訖', detail: isPaid ? '已確認' : '待補' },
+        ];
+
+        const container = $('statusChecks');
+        container.innerHTML = checks.map(c => {
+            if (c.type === 'hr') return '<hr class="border-slate-800" />';
+            return `
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-3">
+                        <div class="status-dot ${c.active ? 'on' : 'off'}">
+                            ${c.active
+                                ? '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+                                : '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                            }
+                        </div>
+                        <span class="font-black text-xs uppercase tracking-tighter ${c.active ? 'text-white' : 'text-slate-600'}">${c.label}</span>
+                    </div>
+                    <span class="text-[9px] font-black italic tracking-widest transition-all ${c.active ? 'text-blue-400 underline underline-offset-4' : 'text-slate-800'}">${c.detail}</span>
+                </div>
+            `;
+        }).join('');
+
+        // 提交按鈕狀態
+        const canSubmit = isNameOK && isAmountMatch && isCodeMatch && isMonthMatch && isUnderLimit && isRoamingOK && isDocReady;
+        const btn = $('submitBtn');
+        if (canSubmit) {
+            btn.disabled = false;
+            btn.className = 'w-full mt-12 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-blue-600 text-white hover:bg-blue-500 cursor-pointer shadow-blue-500/30';
+            btn.textContent = '核對無誤 • 儲存進度';
+        } else {
+            btn.disabled = true;
+            btn.className = 'w-full mt-12 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none';
+            btn.textContent = '資訊未齊全';
+        }
+    }
+
+    // ============================================================
+    // 切換按鈕
+    // ============================================================
+    function togglePaid() {
+        isPaid = !isPaid;
+        const btn = $('btnPaid');
+        btn.className = isPaid ? 'toggle-btn active' : 'toggle-btn inactive';
+        runValidation();
+    }
+
+    function toggleStamp() {
+        hasStamp = !hasStamp;
+        const btn = $('btnStamp');
+        btn.className = hasStamp ? 'toggle-btn active' : 'toggle-btn inactive';
+    }
+
+    // ============================================================
+    // 儲存
+    // ============================================================
+    function handleSave() {
+        const name = $('employeeName').value.trim();
+        const role = $('userRole').value;
+        const code = $('slipCode').value.trim();
+        const month = $('slipMonth').value;
+        const amount = $('slipAmount').value;
+        const roaming = $('roamingAmount').value;
+        const invDate = $('invoiceDate').value;
+        const invAmt = $('invoiceAmount').value;
+
+        const recordId = `${name}_${month}_${Date.now()}`;
+
+        // 儲存員工檔案
+        profiles[name] = { name, role, lastActive: new Date().toISOString() };
+        localStorage.setItem('employeeProfiles', JSON.stringify(profiles));
+
+        // 儲存紀錄
+        const record = {
+            id: recordId,
+            employeeName: name,
+            userRole: role,
+            slipData: { code, month, amount, roamingAmount: roaming },
+            invoiceData: { date: invDate, amount: invAmt },
+            isBusinessTrip: $('isBusinessTrip').checked,
+            isPaid,
+            hasStamp,
+            createdAt: new Date().toISOString(),
+            month
+        };
+
+        records.unshift(record);
+        localStorage.setItem('expenseRecords', JSON.stringify(records));
+
+        // 顯示成功
+        const summary = $('modalSummary');
+        const roleLabel = { manager: '主管', staff: '一般員工', special: '特定專案' };
+        summary.innerHTML = `
+            <p class="flex justify-between"><span>申請人：</span><span class="text-slate-900 font-black italic underline decoration-blue-500">${name}</span></p>
+            <p class="flex justify-between"><span>身分：</span><span class="text-slate-500">${roleLabel[role]}</span></p>
+            <p class="flex justify-between"><span>金額：</span><span class="text-blue-600 font-black">$ ${parseFloat(amount).toLocaleString()}</span></p>
+            <p class="flex justify-between"><span>月份：</span><span class="text-slate-500">${month}</span></p>
+            ${parseFloat(roaming) > 0 ? `<p class="flex justify-between"><span>漫遊：</span><span class="text-amber-500 font-black">$ ${parseFloat(roaming).toLocaleString()}</span></p>` : ''}
+        `;
+
+        $('successModal').classList.remove('hidden');
+        $('successModal').classList.add('flex');
+
+        renderHistory();
+        showToast('驗證通過！紀錄已儲存', 'success');
+    }
+
+    function closeSuccessModal() {
+        $('successModal').classList.add('hidden');
+        $('successModal').classList.remove('flex');
+        clearPreview();
+
+        // 部分重設（保留姓名與角色）
+        $('slipAmount').value = '';
+        $('invoiceAmount').value = '';
+        $('invoiceDate').value = '';
+        $('roamingAmount').value = '0';
+        isPaid = false;
+        hasStamp = false;
+        $('btnPaid').className = 'toggle-btn inactive';
+        $('btnStamp').className = 'toggle-btn inactive';
+        $('invoiceMonthBox').className = 'p-3 rounded-xl border flex items-center justify-center font-black text-xs bg-slate-50 text-slate-300 border-slate-100';
+        $('invoiceMonthBox').textContent = '月份: --';
+        runValidation();
+    }
+
+    // ============================================================
+    // 歷史紀錄
+    // ============================================================
+    function renderHistory() {
+        const name = $('employeeName').value.trim();
+        const list = $('historyList');
+
+        if (!name) {
+            list.innerHTML = '<div class="py-8 text-center text-slate-300 font-bold text-xs uppercase tracking-widest italic">Enter name to track history</div>';
+            return;
+        }
+
+        const history = records
+            .filter(r => r.employeeName === name)
+            .sort((a, b) => b.month.localeCompare(a.month));
+
+        if (history.length === 0) {
+            list.innerHTML = '<div class="py-10 text-center text-slate-300 font-bold italic text-xs uppercase">No history records</div>';
+            return;
+        }
+
+        list.innerHTML = history.map(r => {
+            const roam = parseFloat(r.slipData.roamingAmount) || 0;
+            return `
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-2xl hover:bg-blue-50 transition-colors group">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-900 italic tracking-tighter">${r.month}</p>
+                        <p class="text-[9px] font-bold text-slate-400">${r.slipData.code}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-black text-blue-600">$${parseFloat(r.slipData.amount).toLocaleString()}</p>
+                        <p class="text-[8px] font-black uppercase ${roam > 0 ? 'text-amber-500' : 'text-slate-300'}">
+                            ${roam > 0 ? 'Roaming Incl.' : 'Std Fee'}
+                        </p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // ============================================================
+    // 圖片上傳（模擬 OCR）
+    // ============================================================
+    function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            $('uploadArea').classList.add('hidden');
+            $('previewArea').classList.remove('hidden');
+            $('previewImage').src = reader.result;
+
+            // 模擬掃描動畫
+            $('scanOverlay').classList.remove('hidden');
+            $('scanOverlay').classList.add('flex');
+
+            setTimeout(() => {
+                $('scanOverlay').classList.add('hidden');
+                $('scanOverlay').classList.remove('flex');
+                showToast('圖片已載入（OCR 需配置 API Key）', 'info');
+            }, 2000);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearPreview() {
+        $('previewArea').classList.add('hidden');
+        $('uploadArea').classList.remove('hidden');
+        $('previewImage').src = '';
+        $('fileInput').value = '';
+    }
+
+    // ============================================================
+    // Toast
+    // ============================================================
+    function showToast(message, type = 'info') {
+        const container = $('toastContainer');
+        const colors = {
+            success: 'bg-green-50 border-green-200 text-green-700',
+            error: 'bg-red-50 border-red-200 text-red-700',
+            info: 'bg-blue-50 border-blue-200 text-blue-700'
+        };
+        const icons = {
+            success: '<polyline points="22 4 12 14.01 9 11.01"/>',
+            error: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+            info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast-anim ${colors[type]} border rounded-2xl px-5 py-3 flex items-center gap-3 shadow-lg font-bold text-sm`;
+        toast.innerHTML = `
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${icons[type]}</svg>
+            ${message}
+        `;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            toast.style.transition = 'all 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ============================================================
+    // 啟動
+    // ============================================================
+    init();
     </script>
 </body>
 </html>
