@@ -145,6 +145,15 @@
             .stats-scroll > div { flex-shrink: unset; }
         }
 
+        /* Compliance Check 項目進場動畫 */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .check-item {
+            animation: fadeSlideUp 0.3s ease both;
+        }
+
         /* 修復建議提示 */
         .fix-hint {
             margin-top: 4px;
@@ -764,6 +773,8 @@
                     type: 'err',
                     text: `申報金額 $${data.slipAmt.toLocaleString()} 與憑證總額 $${data.invAmt.toLocaleString()} 差額 $${Math.abs(data.slipAmt - data.invAmt).toLocaleString()}，請確認後修正`
                 };
+            case 'stamp':
+                return { type: 'warn', text: '請在發票憑證區勾選「已核對起訖章」以確認憑證完整性' };
             default:
                 return null;
         }
@@ -818,15 +829,15 @@
         const overWarn = $('overLimitWarning');
         if (slipAmt > limit) {
             overWarn.textContent = `▲ 超過${roleLabels[role]}限額 $${limit.toLocaleString()}，超出 $${(slipAmt - limit).toLocaleString()}`;
-            overWarn.classList.remove('hidden');
+            overWarn.classList.remove('hidden', 'text-emerald-500');
+            overWarn.classList.add('text-red-600');
         } else if (slipAmt > 0) {
             overWarn.textContent = `✓ ${roleLabels[role]}限額 $${limit.toLocaleString()}，剩餘額度 $${(limit - slipAmt).toLocaleString()}`;
-            overWarn.classList.remove('hidden');
-            overWarn.classList.remove('text-red-600');
+            overWarn.classList.remove('hidden', 'text-red-600');
             overWarn.classList.add('text-emerald-500');
         } else {
             overWarn.classList.add('hidden');
-            overWarn.classList.remove('text-emerald-500');
+            overWarn.classList.remove('text-emerald-500', 'text-red-600');
         }
 
         // 漫遊警告
@@ -859,6 +870,7 @@
             { key: 'roaming', active: roamingPass, label: '漫遊申請資格', detail: !isRoaming ? '不適用' : (roamingPass ? '符合事由' : '需出差事由') },
             { key: 'paid', active: paidPass, label: '繳費狀態核對', detail: paidPass ? '已確認繳費' : '尚未確認' },
             { key: 'subject', active: subjectPass, label: '科目與月份', detail: subjectPass ? '核對通過' : (isCodeM842 ? '月份不符' : '科目錯誤') },
+            { key: 'stamp', active: $('hasStamp').checked, label: '起訖章核對', detail: $('hasStamp').checked ? '已確認' : '尚未確認' },
         ];
 
         const iconOK = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
@@ -879,8 +891,9 @@
                 }
             }
 
+            const idx = checks.indexOf(c);
             return `
-                <div>
+                <div class="check-item" style="animation-delay:${idx * 40}ms">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="status-dot ${c.active ? 'on' : 'off'}">${c.active ? iconOK : iconFail}</div>
@@ -894,7 +907,8 @@
         }).join('');
 
         // 按鈕（全部 7 項通過才可提交）
-        const canSubmit = isNameOK && isAmountMatch && limitPass && roamingPass && paidPass && subjectPass;
+        const stampPass = $('hasStamp').checked;
+        const canSubmit = isNameOK && isAmountMatch && limitPass && roamingPass && paidPass && subjectPass && stampPass;
         const btn = $('submitBtn');
         if (canSubmit) {
             btn.disabled = false;
@@ -903,8 +917,8 @@
         } else {
             btn.disabled = true;
             btn.className = 'w-full mt-10 py-5 r-24 font-black text-xl transition-all transform active:scale-95 shadow-2xl bg-slate-800 text-slate-600 cursor-not-allowed shadow-none';
-            const passCount = [isNameOK, isAmountMatch, limitPass, roamingPass, paidPass, subjectPass].filter(Boolean).length;
-            btn.textContent = `資訊未齊全 (${passCount}/6)`;
+            const passCount = [isNameOK, isAmountMatch, limitPass, roamingPass, paidPass, subjectPass, stampPass].filter(Boolean).length;
+            btn.textContent = `資訊未齊全 (${passCount}/7)`;
         }
     }
 
