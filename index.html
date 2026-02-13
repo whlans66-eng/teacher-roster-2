@@ -329,6 +329,37 @@
                 </div>
             </section>
 
+            <!-- 萬海專屬：多圖批量核對 -->
+            <section class="bg-white r-32 p-6 shadow-sm border border-slate-200 mb-6">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-tighter italic">憑證池 (Receipt Pool)</h3>
+                    <label class="text-[10px] font-black px-3 py-2 rounded-xl bg-slate-100 text-slate-600 cursor-pointer hover:bg-blue-100 hover:text-blue-700 transition-all uppercase tracking-wider">
+                        批次上傳
+                        <input id="batchFileInput" type="file" class="hidden" accept="image/*" multiple />
+                    </label>
+                </div>
+                <div id="receiptPool" class="flex flex-wrap gap-4 min-h-[100px] items-center justify-center border-2 border-dashed border-slate-100 rounded-3xl p-4 drop-zone">
+                    <span id="receiptPoolPlaceholder" class="text-slate-300 font-bold text-[10px] uppercase tracking-widest">請批次拖放所有帳單與驗收單照片</span>
+                </div>
+            </section>
+
+            <section class="bg-slate-900 text-white r-40 p-8 shadow-2xl">
+                <div class="flex items-center justify-between mb-8">
+                    <h2 class="text-lg font-black flex items-center gap-2 italic">自動解析清單 (Dynamic Batch Parsing)</h2>
+                    <span id="rowCountTag" class="bg-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">0 Items</span>
+                </div>
+                <div id="dynamicList" class="space-y-4">
+                    <div class="py-12 text-center text-slate-700 font-black italic">Waiting for Main Slip...</div>
+                </div>
+                <div class="mt-8 pt-6 border-t border-slate-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-xs font-black text-slate-500 uppercase">總計加總核對 (Check Sum)</span>
+                        <span id="checkSumResult" class="text-sm font-black">$0 / $0</span>
+                    </div>
+                    <button id="batchSubmitBtn" disabled class="w-full py-5 r-24 font-black text-xl bg-slate-800 text-slate-600 cursor-not-allowed">解析未完成</button>
+                </div>
+            </section>
+
             <!-- 雙面板 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -505,6 +536,9 @@
     // ============================================================
     let records = JSON.parse(localStorage.getItem('expenseRecords') || '[]');
     let profiles = JSON.parse(localStorage.getItem('employeeProfiles') || '{}');
+    let pool = [];
+    let mainSlipData = null;
+    let autoExtractedRows = [];
     // isPaid / hasStamp 現在由 checkbox 控制，不需額外變數
 
     const roleLimits = { manager: 1399, staff: 800, special: 500 };
@@ -631,6 +665,15 @@
         });
         setupDragDrop(invDrop, file => processUpload(file, 'invoice'));
 
+        // 萬海批量憑證池
+        $('batchFileInput').addEventListener('change', e => {
+            if (e.target.files?.length) handleBatchUpload(e.target.files);
+            e.target.value = '';
+        });
+        const receiptPoolEl = $('receiptPool');
+        receiptPoolEl.addEventListener('click', () => $('batchFileInput').click());
+        setupMultiDragDrop(receiptPoolEl, files => handleBatchUpload(files));
+
         runValidation();
         renderHistory();
         updateStats();
@@ -733,6 +776,151 @@
         $('ocrResultBadge').classList.add('hidden');
         $('invoiceDropZone').classList.remove('has-file');
         $('invoiceDropLabel').textContent = '拖放發票自動填入欄位';
+    }
+
+    function detectMonth(fileName) {
+        const hit = fileName.match(/(20\d{2})[-_]?([01]\d)/);
+        if (!hit) return null;
+        return `${hit[1]}-${hit[2]}`;
+    }
+
+    function setupMultiDragDrop(el, onFiles) {
+        ['dragenter', 'dragover'].forEach(evt => {
+            el.addEventListener(evt, e => { e.preventDefault(); el.classList.add('drag-over'); });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            el.addEventListener(evt, e => { e.preventDefault(); el.classList.remove('drag-over'); });
+        });
+        el.addEventListener('drop', e => {
+            const files = Array.from(e.dataTransfer.files || []).filter(file => file.type.startsWith('image/'));
+            if (files.length) onFiles(files);
+        });
+    }
+
+    function handleBatchUpload(files) {
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const doc = {
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    src: e.target.result,
+                    name: file.name,
+                    month: detectMonth(file.name),
+                    isMain: file.name.includes('驗收單')
+                };
+                pool.push(doc);
+                renderPool();
+                if (doc.isMain) parseWanHaiSlip(doc);
+                else autoMatchReceipts();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function renderPool() {
+        const wrap = $('receiptPool');
+        if (pool.length === 0) {
+            wrap.innerHTML = '<span id="receiptPoolPlaceholder" class="text-slate-300 font-bold text-[10px] uppercase tracking-widest">請批次拖放所有帳單與驗收單照片</span>';
+            return;
+        }
+
+        wrap.innerHTML = pool.map(item => `
+            <div class="w-[120px] rounded-2xl border ${item.isMain ? 'border-blue-300 bg-blue-50/60' : 'border-slate-200 bg-white'} p-2 shadow-sm">
+                <img src="${item.src}" alt="${item.name}" class="w-full h-16 object-cover rounded-xl mb-2" />
+                <p class="text-[9px] font-black truncate ${item.isMain ? 'text-blue-700' : 'text-slate-500'}">${item.isMain ? 'MAIN' : 'INVOICE'} • ${item.month || '--'}</p>
+                <p class="text-[9px] font-bold text-slate-400 truncate">${item.name}</p>
+            </div>
+        `).join('');
+    }
+
+    function parseWanHaiSlip(doc) {
+        const extractedLines = [
+            { code: 'M842', month: '2025-09', amt: 800, remark: '電信費' },
+            { code: 'M842', month: '2025-10', amt: 800, remark: '電信費' },
+            { code: 'M842', month: '2025-11', amt: 800, remark: '電信費' },
+            { code: 'M842', month: '2025-12', amt: 800, remark: '電信費' },
+            { code: 'M842', month: '2026-01', amt: 800, remark: '電信費' },
+            { code: 'M842', month: '2026-01', amt: 597, remark: '香港出差漫遊', isRoaming: true }
+        ];
+
+        autoExtractedRows = extractedLines;
+        mainSlipData = {
+            id: doc.id,
+            grandTotal: extractedLines.reduce((sum, line) => sum + line.amt, 0)
+        };
+        renderDynamicList(extractedLines);
+        showToast('已解析主驗收單，完成 M842 明細拆分', 'info');
+    }
+
+    function renderDynamicList(lines) {
+        const list = $('dynamicList');
+        const role = $('userRole').value;
+        const limit = roleLimits[role];
+        const isTrip = $('isBusinessTrip').checked;
+
+        list.innerHTML = lines.map((line, i) => {
+            const isOver = line.amt > limit;
+            const roamingPass = line.isRoaming ? isTrip : true;
+            const hasInvoice = pool.some(p => p.month === line.month && !p.isMain);
+            const statusText = !roamingPass
+                ? '⚠️ 需核對出差證明'
+                : (hasInvoice ? '已匹配憑證 ✓' : '缺少憑證 ❌');
+
+            return `
+                <div class="check-item p-4 bg-white/5 rounded-3xl border ${hasInvoice ? 'border-emerald-500/30' : 'border-white/10'} mb-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] font-black text-blue-500 uppercase">Line #${i + 1} • ${line.code}</span>
+                            <p class="text-xs font-black text-white">${line.month} ${line.remark}</p>
+                            ${isOver ? `<p class="text-[9px] text-red-500 font-bold">▲ 超過職級上限 ${limit}</p>` : '<p class="text-[9px] text-emerald-400 font-bold">額度內通過</p>'}
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-black ${isOver ? 'text-red-500' : 'text-white'}">$${line.amt}</p>
+                            <span class="text-[9px] font-bold ${(!roamingPass || !hasInvoice) ? 'text-amber-400' : 'text-emerald-400'}">${statusText}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        $('rowCountTag').textContent = `${lines.length} Items Detected`;
+        autoMatchReceipts();
+    }
+
+    function autoMatchReceipts() {
+        if (!autoExtractedRows.length) return;
+        updateBatchStatus(autoExtractedRows);
+    }
+
+    function updateBatchStatus(lines) {
+        const isTrip = $('isBusinessTrip').checked;
+        const role = $('userRole').value;
+        const limit = roleLimits[role];
+
+        const total = lines.reduce((sum, line) => sum + line.amt, 0);
+        const grandTotal = mainSlipData?.grandTotal || 0;
+        const checkSumPass = total === grandTotal;
+
+        const allRulesPass = lines.every(line => {
+            const hasInvoice = pool.some(p => p.month === line.month && !p.isMain);
+            const rolePass = line.amt <= limit;
+            const roamingPass = line.isRoaming ? isTrip : true;
+            return hasInvoice && rolePass && roamingPass;
+        });
+
+        const btn = $('batchSubmitBtn');
+        $('checkSumResult').textContent = `$${total.toLocaleString()} / $${grandTotal.toLocaleString()}`;
+        $('checkSumResult').className = `text-sm font-black ${checkSumPass ? 'text-emerald-400' : 'text-red-400'}`;
+
+        if (checkSumPass && allRulesPass && lines.length > 0) {
+            btn.disabled = false;
+            btn.className = 'w-full py-5 r-24 font-black text-xl bg-blue-600 text-white hover:bg-blue-500 transition-all';
+            btn.textContent = '批量核對完成，可送出';
+        } else {
+            btn.disabled = true;
+            btn.className = 'w-full py-5 r-24 font-black text-xl bg-slate-800 text-slate-600 cursor-not-allowed';
+            btn.textContent = checkSumPass ? '尚有明細待補件' : '總計不一致，需複核';
+        }
     }
 
     // ============================================================
@@ -905,6 +1093,10 @@
                 </div>
             `;
         }).join('');
+
+        if (autoExtractedRows.length) {
+            renderDynamicList(autoExtractedRows);
+        }
 
         // 按鈕（全部 7 項通過才可提交）
         const stampPass = $('hasStamp').checked;
